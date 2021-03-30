@@ -1,37 +1,17 @@
 
-public class SearchNode {
+/**
+ * This class is used to assist in the A* search algorithm
+ * 
+ * @author menzieleon
+ *
+ */
+public class SearchNode implements Comparable<SearchNode> {
 
-	public Node getNode() {
-		return node;
-	}
+	public Node node;
+	public Node prev;
 
-	public void setNode(Node node) {
-		this.node = node;
-	}
-
-	public Node getPrev() {
-		return prev;
-	}
-
-	public void setPrev(Node prev) {
-		this.prev = prev;
-	}
-
-	public Double getG() {
-		return g;
-	}
-
-	public void setG(Double g) {
-		this.g = g;
-	}
-
-	public Double getF() {
-		return f;
-	}
-
-	public void setF(Double f) {
-		this.f = f;
-	}
+	public Double g;
+	public Double f;
 
 	public SearchNode(Node node, Node prev, Double g, Double f) {
 		super();
@@ -41,10 +21,8 @@ public class SearchNode {
 		this.f = f;
 	}
 
-	private Node node;
-	private Node prev;
-
-	private Double g;
-	private Double f;
-
+	@Override
+	public int compareTo(SearchNode s) {
+		return this.f.compareTo(s.f);
+	}
 }

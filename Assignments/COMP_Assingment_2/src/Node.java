@@ -16,17 +16,23 @@ public class Node {
 
 	public final int nodeID;
 	public final Location location;
-	public final Collection<Segment> segments;
-	public boolean visited = false;
+	public final Collection<Segment> outGoingSegments;
+	public final Collection<Segment> inComingSegments;
+	public Node prev;
 
 	public Node(int nodeID, double lat, double lon) {
 		this.nodeID = nodeID;
 		this.location = Location.newFromLatLon(lat, lon);
-		this.segments = new HashSet<Segment>();
+		this.outGoingSegments = new HashSet<Segment>();
+		this.inComingSegments = new HashSet<Segment>();
 	}
 
-	public void addSegment(Segment seg) {
-		segments.add(seg);
+	public void addInComingSegment(Segment seg) {
+		inComingSegments.add(seg);
+	}
+
+	public void addOutGoingSegment(Segment seg) {
+		outGoingSegments.add(seg);
 	}
 
 	public void draw(Graphics g, Dimension area, Location origin, double scale) {
@@ -40,17 +46,13 @@ public class Node {
 		g.fillRect(p.x - size / 2, p.y - size / 2, size, size);
 	}
 
-	public void setVisited(boolean visited) {
-		this.visited = visited;
-	}
-
 	public Location getLoc() {
 		return this.location;
 	}
 
 	public String toString() {
 		Set<String> edges = new HashSet<String>();
-		for (Segment s : segments) {
+		for (Segment s : outGoingSegments) {
 			if (!edges.contains(s.road.name))
 				edges.add(s.road.name);
 		}
@@ -61,6 +63,7 @@ public class Node {
 		}
 		return str.substring(0, str.length() - 2);
 	}
+
 }
 
 // code for COMP261 assignments

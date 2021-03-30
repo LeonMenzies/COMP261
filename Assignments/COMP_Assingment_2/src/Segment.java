@@ -16,8 +16,7 @@ public class Segment {
 	public final double length;
 	public final Location[] points;
 
-	public Segment(Graph graph, int roadID, double length, int node1ID,
-			int node2ID, double[] coords) {
+	public Segment(Graph graph, int roadID, double length, int node1ID, int node2ID, double[] coords) {
 
 		this.road = graph.roads.get(roadID);
 		this.start = graph.nodes.get(node1ID);
@@ -26,13 +25,15 @@ public class Segment {
 
 		points = new Location[coords.length / 2];
 		for (int i = 0; i < points.length; i++) {
-			points[i] = Location
-					.newFromLatLon(coords[2 * i], coords[2 * i + 1]);
+			points[i] = Location.newFromLatLon(coords[2 * i], coords[2 * i + 1]);
 		}
 
 		this.road.addSegment(this);
-		this.start.addSegment(this);
-		this.end.addSegment(this);
+
+		this.start.addOutGoingSegment(this);
+		this.end.addOutGoingSegment(this);
+		this.start.addInComingSegment(this);
+		this.end.addInComingSegment(this);
 	}
 
 	public void draw(Graphics g, Location origin, double scale) {

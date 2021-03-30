@@ -5,9 +5,13 @@ import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.PriorityQueue;
+
+import javax.swing.JButton;
 
 /**
  * This is the main class for the mapping program. It extends the GUI abstract
@@ -48,6 +52,7 @@ public class Mapper extends GUI {
 	private Trie trie;
 
 	// A* seach nodes
+	private boolean aStarToggle = false;
 	private Node start = null;
 	private Node end = null;
 
@@ -59,11 +64,6 @@ public class Mapper extends GUI {
 
 	@Override
 	protected void onClick(MouseEvent e) {
-		// Clear start and end nodes
-		if (start != null && end != null) {
-			start = null;
-			end = null;
-		}
 
 		// Check for mouse drag
 		if (p != null) {
@@ -87,29 +87,99 @@ public class Mapper extends GUI {
 		// if it's close enough, highlight it and show some information.
 		if (clicked.distance(closest.location) < MAX_CLICKED_DISTANCE) {
 			graph.setHighlight(closest);
-			// Set start and end nodes for A*
+			getTextOutputArea().append(closest.toString() + "\n");
+
+			graph.setHighlight(new ArrayList<>());
+
 			if (start == null) {
 				start = closest;
-				getTextOutputArea().setText("Start:\n");
-				getTextOutputArea().append(closest.toString() + "\n");
 			} else {
-				getTextOutputArea().append("End:\n");
-				getTextOutputArea().append(closest.toString());
 				end = closest;
-				aStarSearch();
 			}
 		}
 	}
 
-	private void aStarSearch() {
-		System.out.println("A*");
+	@Override
+	protected void onAStar(JButton aps) {
+		if (start == null || end == null) {
+			System.err.println("Both start and end need to be selected");
+			aps.setForeground(Color.RED);
+			return;
+		}
 
-		PriorityQueue<Node> fringe = new PriorityQueue<Node>();
-		fringe.add(start);
+		boolean pathFound = false;
+		ArrayList<Node> visited = new ArrayList<>();
+		PriorityQueue<SearchNode> fringe = new PriorityQueue<>();
+		fringe.add(new SearchNode(start, null, 0.0, h(start)));
 
 		while (!fringe.isEmpty()) {
+			SearchNode s = fringe.poll();
+			Node n = s.node;
 
+			if (!visited.contains(n)) {
+				visited.add(n);
+				n.prev = s.prev;
+
+				// If the destination is found
+				if (n.equals(end)) {
+
+					pathFound = true;
+					break;
+				}
+
+				for (Segment seg : n.outGoingSegments) {
+
+					Node neighbour;
+					if (seg.start.equals(n)) {
+						neighbour = seg.end;
+					} else {
+						neighbour = seg.start;
+					}
+
+					if (!visited.contains(neighbour)) {
+
+						double g = s.g + seg.length;
+						double f = g + h(neighbour);
+
+						fringe.add(new SearchNode(neighbour, n, g, f));
+						fringe.add(new SearchNode(neighbour, n, g, f));
+					}
+				}
+			}
 		}
+
+		if (pathFound) {
+			List<Road> highLightPath = new ArrayList<>();
+
+			// Find path
+			Node path = end;
+
+			while (!path.equals(start)) {
+
+				System.out.println(path);
+
+				for (Segment s : path.inComingSegments) {
+					if (s.start == path.prev) {
+						highLightPath.add(s.road);
+					}
+				}
+
+				path = path.prev;
+			}
+
+			graph.setHighlight(highLightPath);
+
+			start = null;
+			end = null;
+			aps.setForeground(Color.BLACK);
+		} else {
+			System.err.println("There is no valid path connecting those two Nodes");
+		}
+	}
+
+	@Override
+	protected void onAPs() {
+
 	}
 
 	public double h(Node n) {

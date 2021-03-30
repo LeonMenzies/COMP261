@@ -77,6 +77,16 @@ public abstract class GUI {
 	protected abstract void onMove(Move m);
 
 	/**
+	 * Called when A star search is press
+	 */
+	protected abstract void onAStar(JButton aps);
+
+	/**
+	 * Called when AP button is pressed
+	 */
+	protected abstract void onAPs();
+
+	/**
 	 * Is called when the user has successfully selected a directory to load the
 	 * data files from. File objects representing the four files of interested are
 	 * passed to the method. The fourth File, polygons, might be null if it isn't
@@ -283,6 +293,22 @@ public abstract class GUI {
 			}
 		});
 
+		JButton astar = new JButton("A*");
+		astar.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent ev) {
+				onAStar(astar);
+				redraw();
+			}
+		});
+
+		JButton aps = new JButton("AP");
+		aps.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent ev) {
+				onAPs();
+				redraw();
+			}
+		});
+
 		// next, make the search box at the top-right. we manually fix
 		// it's size, and add an action listener to call your code when
 		// the user presses enter.
@@ -342,13 +368,15 @@ public abstract class GUI {
 
 		JPanel navigation = new JPanel();
 		navigation.setMaximumSize(new Dimension(150, 60));
-		navigation.setLayout(new GridLayout(2, 3));
+		navigation.setLayout(new GridLayout(2, 4));
 		navigation.add(out);
 		navigation.add(north);
 		navigation.add(in);
+		navigation.add(astar);
 		navigation.add(west);
 		navigation.add(south);
 		navigation.add(east);
+		navigation.add(aps);
 		controls.add(navigation);
 		controls.add(Box.createRigidArea(new Dimension(15, 0)));
 		// glue is another invisible component that grows to take up all the
