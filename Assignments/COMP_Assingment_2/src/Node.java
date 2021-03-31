@@ -19,12 +19,15 @@ public class Node {
 	public final Collection<Segment> outGoingSegments;
 	public final Collection<Segment> inComingSegments;
 	public Node prev;
+	public int depth;
+	public int reachBack;
 
 	public Node(int nodeID, double lat, double lon) {
 		this.nodeID = nodeID;
 		this.location = Location.newFromLatLon(lat, lon);
 		this.outGoingSegments = new HashSet<Segment>();
 		this.inComingSegments = new HashSet<Segment>();
+		depth = -1;
 	}
 
 	public void addInComingSegment(Segment seg) {

@@ -1,4 +1,5 @@
 import java.awt.BasicStroke;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -24,6 +25,8 @@ public class Graph {
 	Collection<Segment> segments;
 
 	Node highlightedNode;
+	Node aStarStartHighlight;
+	Node aStarEndHighlight;
 	Collection<Road> highlightedRoads = new HashSet<>();
 
 	public Graph(File nodes, File roads, File segments, File polygons) {
@@ -63,10 +66,29 @@ public class Graph {
 			g2.setColor(Mapper.HIGHLIGHT_COLOUR);
 			highlightedNode.draw(g2, screen, origin, scale);
 		}
+
+		// Visuals for highlighting start and end node for a* search
+		if (aStarStartHighlight != null) {
+			g2.setColor(Color.GREEN);
+			aStarStartHighlight.draw(g2, screen, origin, scale);
+		}
+
+		if (aStarEndHighlight != null) {
+			g2.setColor(Color.RED);
+			aStarEndHighlight.draw(g2, screen, origin, scale);
+		}
 	}
 
 	public void setHighlight(Node node) {
 		this.highlightedNode = node;
+	}
+
+	public void startHighlight(Node node) {
+		this.aStarStartHighlight = node;
+	}
+
+	public void endHighlight(Node node) {
+		this.aStarEndHighlight = node;
 	}
 
 	public void setHighlight(Collection<Road> roads) {

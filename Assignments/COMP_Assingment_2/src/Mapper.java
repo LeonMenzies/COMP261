@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.Stack;
 
 import javax.swing.JButton;
 
@@ -91,22 +92,22 @@ public class Mapper extends GUI {
 
 			graph.setHighlight(new ArrayList<>());
 
-			if (start == null) {
-				start = closest;
-			} else {
-				end = closest;
+			// If a star search is enabled
+			if (aStarToggle) {
+				if (start == null) {
+					start = closest;
+					graph.startHighlight(closest);
+					graph.endHighlight(null);
+				} else {
+					end = closest;
+					graph.endHighlight(closest);
+					aStarSearch();
+				}
 			}
 		}
 	}
 
-	@Override
-	protected void onAStar(JButton aps) {
-		if (start == null || end == null) {
-			System.err.println("Both start and end need to be selected");
-			aps.setForeground(Color.RED);
-			return;
-		}
-
+	private void aStarSearch() {
 		boolean pathFound = false;
 		ArrayList<Node> visited = new ArrayList<>();
 		PriorityQueue<SearchNode> fringe = new PriorityQueue<>();
@@ -158,8 +159,8 @@ public class Mapper extends GUI {
 
 				System.out.println(path);
 
-				for (Segment s : path.inComingSegments) {
-					if (s.start == path.prev) {
+				for (Segment s : path.prev.outGoingSegments) {
+					if (s.end.equals(path)) {
 						highLightPath.add(s.road);
 					}
 				}
@@ -171,14 +172,66 @@ public class Mapper extends GUI {
 
 			start = null;
 			end = null;
-			aps.setForeground(Color.BLACK);
 		} else {
 			System.err.println("There is no valid path connecting those two Nodes");
 		}
 	}
 
 	@Override
+	protected void onAStar(JButton aps) {
+
+		aStarToggle = !aStarToggle;
+
+		// Remove all colored nodes and roads
+		graph.endHighlight(null);
+		graph.startHighlight(null);
+		graph.setHighlight(new ArrayList<>());
+
+		if (aStarToggle) {
+			aps.setForeground(Color.GREEN);
+		} else {
+			aps.setForeground(Color.RED);
+		}
+	}
+
+	@Override
 	protected void onAPs() {
+
+		if (!graph.nodes.isEmpty()) {
+
+			List<Node> APs = new ArrayList<>();
+
+			Node root = graph.nodes.get(graph.nodes.values().toArray()[0]);
+			root.depth = 0;
+			int numSubTrees = 0;
+
+			for (Segment s : root.outGoingSegments) {
+				if (s.end.depth == -1) {
+					iterArtPts(new APNode(s.end, 1, root));
+					numSubTrees++;
+				}
+			}
+
+		}
+	}
+
+	private void iterArtPts(APNode apn) {
+
+		Stack<APNode> fringe = new Stack<APNode>();
+		fringe.add(apn);
+
+		while (!fringe.isEmpty()) {
+			APNode peek = fringe.peek();
+			Node n = peek.node;
+			int d = peek.depth;
+
+			if (d == -1) {
+				n.depth = d;
+				n.reachBack = d;
+
+			}
+
+		}
 
 	}
 

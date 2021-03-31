@@ -1,9 +1,9 @@
 
 /**
- * This class is used to assist in the A* search algorithm
- * 
  * @author menzieleon
  *
+ *         This class is used to assist in the A* search algorithm
+ * 
  */
 public class SearchNode implements Comparable<SearchNode> {
 
