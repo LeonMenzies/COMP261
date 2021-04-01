@@ -8,17 +8,20 @@
 public class SearchNode implements Comparable<SearchNode> {
 
 	public Node node;
-	public Node prev;
+	public SearchNode prev;
 
 	public Double g;
 	public Double f;
 
-	public SearchNode(Node node, Node prev, Double g, Double f) {
+	public Segment segment;
+
+	public SearchNode(Node node, SearchNode prev, Double g, Double f, Segment seg) {
 		super();
 		this.node = node;
 		this.prev = prev;
 		this.g = g;
 		this.f = f;
+		this.segment = seg;
 	}
 
 	@Override

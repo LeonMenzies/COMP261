@@ -7,8 +7,10 @@ import java.awt.event.MouseWheelEvent;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Stack;
 
@@ -40,7 +42,7 @@ public class Mapper extends GUI {
 	public static final double MIN_ZOOM = 1, MAX_ZOOM = 200;
 
 	// how far away from a node you can click before it isn't counted.
-	public static final double MAX_CLICKED_DISTANCE = 0.15;
+	public static final double MAX_CLICKED_DISTANCE = 0.30;
 
 	// these two define the 'view' of the program, ie. where you're looking and
 	// how zoomed in you are.
@@ -98,6 +100,7 @@ public class Mapper extends GUI {
 					start = closest;
 					graph.startHighlight(closest);
 					graph.endHighlight(null);
+					graph.highlightedSegments = new HashSet<>();
 				} else {
 					end = closest;
 					graph.endHighlight(closest);
@@ -108,10 +111,9 @@ public class Mapper extends GUI {
 	}
 
 	private void aStarSearch() {
-		boolean pathFound = false;
 		ArrayList<Node> visited = new ArrayList<>();
 		PriorityQueue<SearchNode> fringe = new PriorityQueue<>();
-		fringe.add(new SearchNode(start, null, 0.0, h(start)));
+		fringe.add(new SearchNode(start, null, 0.0, h(start), null));
 
 		while (!fringe.isEmpty()) {
 			SearchNode s = fringe.poll();
@@ -119,13 +121,12 @@ public class Mapper extends GUI {
 
 			if (!visited.contains(n)) {
 				visited.add(n);
-				n.prev = s.prev;
 
 				// If the destination is found
 				if (n.equals(end)) {
 
-					pathFound = true;
-					break;
+					showPath(s);
+					return;
 				}
 
 				for (Segment seg : n.outGoingSegments) {
@@ -142,39 +143,46 @@ public class Mapper extends GUI {
 						double g = s.g + seg.length;
 						double f = g + h(neighbour);
 
-						fringe.add(new SearchNode(neighbour, n, g, f));
-						fringe.add(new SearchNode(neighbour, n, g, f));
+						fringe.add(new SearchNode(neighbour, s, g, f, seg));
+						fringe.add(new SearchNode(neighbour, s, g, f, seg));
 					}
 				}
 			}
 		}
 
-		if (pathFound) {
-			List<Road> highLightPath = new ArrayList<>();
+		// If there is no connecting paths between
+		System.err.println("No valid path found");
+		start = null;
+		graph.aStarStartHighlight = null;
+		end = null;
+		graph.aStarEndHighlight = null;
 
-			// Find path
-			Node path = end;
+	}
 
-			while (!path.equals(start)) {
+	public void showPath(SearchNode search) {
+		List<Segment> highLightPath = new ArrayList<>();
 
-				System.out.println(path);
+		// Find path
+		SearchNode path = search;
 
-				for (Segment s : path.prev.outGoingSegments) {
-					if (s.end.equals(path)) {
-						highLightPath.add(s.road);
-					}
-				}
+		while (!path.node.equals(start)) {
 
-				path = path.prev;
-			}
+			highLightPath.add(path.segment);
 
-			graph.setHighlight(highLightPath);
-
-			start = null;
-			end = null;
-		} else {
-			System.err.println("There is no valid path connecting those two Nodes");
+			path = path.prev;
 		}
+
+		Collections.reverse(highLightPath);
+
+		for (Segment s : highLightPath) {
+			getTextOutputArea().append(s.road.toString() + "\n");
+		}
+
+		graph.setHighlightSeg(highLightPath);
+
+		start = null;
+		end = null;
+
 	}
 
 	@Override
@@ -194,21 +202,56 @@ public class Mapper extends GUI {
 		}
 	}
 
+	/**
+	 * @param n
+	 * @return - Distance as a double
+	 * 
+	 *         Find the heuristic value from a node to the end
+	 */
+	public double h(Node n) {
+
+		double ac = Math.abs(end.getLoc().x - n.getLoc().x);
+		double cb = Math.abs(end.getLoc().y - n.getLoc().y);
+
+		return Math.hypot(ac, cb);
+	}
+
 	@Override
 	protected void onAPs() {
 
 		if (!graph.nodes.isEmpty()) {
+			// Reset the depth of each node so it can be re-searched
+			for (Map.Entry<Integer, Node> resetAp : graph.nodes.entrySet()) {
+				resetAp.getValue().depth = -1;
+			}
 
 			List<Node> APs = new ArrayList<>();
 
-			Node root = graph.nodes.get(graph.nodes.values().toArray()[0]);
+			Node root = graph.nodes.get(graph.nodes.keySet().toArray()[0]);
 			root.depth = 0;
 			int numSubTrees = 0;
 
 			for (Segment s : root.outGoingSegments) {
-				if (s.end.depth == -1) {
-					iterArtPts(new APNode(s.end, 1, root));
-					numSubTrees++;
+
+				// Check both ends of the segment
+				if (s.start.equals(root)) {
+					if (s.end.depth == -1) {
+						System.out.println("Here");
+
+						iterArtPts(new APNode(s.end, 1, root));
+						numSubTrees++;
+					}
+				} else {
+					if (s.start.depth == -1) {
+						System.out.println(s);
+						iterArtPts(new APNode(s.start, 1, root));
+
+						numSubTrees++;
+					}
+				}
+
+				if (numSubTrees > 1) {
+					APs.add(root);
 				}
 			}
 
@@ -216,6 +259,8 @@ public class Mapper extends GUI {
 	}
 
 	private void iterArtPts(APNode apn) {
+
+		List<Node> apNodes = new ArrayList<>();
 
 		Stack<APNode> fringe = new Stack<APNode>();
 		fringe.add(apn);
@@ -225,22 +270,42 @@ public class Mapper extends GUI {
 			Node n = peek.node;
 			int d = peek.depth;
 
-			if (d == -1) {
+			if (n.depth == -1) {
 				n.depth = d;
 				n.reachBack = d;
+				for (Segment s : n.outGoingSegments) {
+					if (s.end == n) {
+						if (!s.start.equals(peek.root)) {
+							n.children.add(s.start);
+						}
+					} else if (s.start == n) {
+						if (!s.end.equals(peek.root)) {
+							n.children.add(s.end);
+						}
+					}
+				}
 
+			} else if (!n.children.isEmpty()) {
+				Node child = n.children.remove(0);
+				if (child.depth < -1) {
+					n.reachBack = child.depth;
+				} else {
+					fringe.push(new APNode(child, d + 1, n));
+				}
+			} else {
+				if (!n.equals(apn.node)) {
+					peek.root.reachBack = n.reachBack;
+					if (n.reachBack >= peek.root.depth) {
+						apNodes.add(peek.root);
+					}
+				}
+				fringe.remove(peek);
 			}
 
 		}
+		graph.setHighlightAP(apNodes);
+		System.out.println(apNodes.size());
 
-	}
-
-	public double h(Node n) {
-
-		double ac = Math.abs(end.getLoc().x - n.getLoc().x);
-		double cb = Math.abs(end.getLoc().y - n.getLoc().y);
-
-		return Math.hypot(ac, cb);
 	}
 
 	@Override

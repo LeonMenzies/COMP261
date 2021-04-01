@@ -9,13 +9,13 @@ import java.util.HashSet;
  * @author tony
  */
 public class Road {
+
 	public final int roadID;
 	public final String name, city;
 	public final Collection<Segment> components;
 
-	public Road(int roadID, int type, String label, String city, int oneway,
-			int speed, int roadclass, int notforcar, int notforpede,
-			int notforbicy) {
+	public Road(int roadID, int type, String label, String city, int oneway, int speed, int roadclass, int notforcar,
+			int notforpede, int notforbicy) {
 		this.roadID = roadID;
 		this.city = city;
 		this.name = label;
@@ -25,6 +25,12 @@ public class Road {
 	public void addSegment(Segment seg) {
 		components.add(seg);
 	}
+
+	@Override
+	public String toString() {
+		return "Road [roadID=" + roadID + ", name=" + name + "]";
+	}
+
 }
 
 // code for COMP261 assignments

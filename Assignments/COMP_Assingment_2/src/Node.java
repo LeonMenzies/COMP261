@@ -1,8 +1,10 @@
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Point;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -21,6 +23,7 @@ public class Node {
 	public Node prev;
 	public int depth;
 	public int reachBack;
+	public List<Node> children;
 
 	public Node(int nodeID, double lat, double lon) {
 		this.nodeID = nodeID;
@@ -28,6 +31,7 @@ public class Node {
 		this.outGoingSegments = new HashSet<Segment>();
 		this.inComingSegments = new HashSet<Segment>();
 		depth = -1;
+		children = new ArrayList<>();
 	}
 
 	public void addInComingSegment(Segment seg) {

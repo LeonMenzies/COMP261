@@ -28,6 +28,8 @@ public class Graph {
 	Node aStarStartHighlight;
 	Node aStarEndHighlight;
 	Collection<Road> highlightedRoads = new HashSet<>();
+	Collection<Segment> highlightedSegments = new HashSet<>();
+	Collection<Node> APHighlight = new HashSet<>();
 
 	public Graph(File nodes, File roads, File segments, File polygons) {
 		this.nodes = Parser.parseNodes(nodes, this);
@@ -56,10 +58,23 @@ public class Graph {
 			}
 		}
 
+		// draw the segments of all highlighted roads.
+		g2.setColor(Mapper.HIGHLIGHT_COLOUR);
+		g2.setStroke(new BasicStroke(3));
+		for (Segment seg : highlightedSegments) {
+			seg.draw(g2, origin, scale);
+		}
+
 		// draw all the nodes.
 		g2.setColor(Mapper.NODE_COLOUR);
 		for (Node n : nodes.values())
 			n.draw(g2, screen, origin, scale);
+
+		// Highlight the APNodes
+		g2.setColor(Color.RED);
+		for (Node n : APHighlight) {
+			n.draw(g2, screen, origin, scale);
+		}
 
 		// draw the highlighted node, if it exists.
 		if (highlightedNode != null) {
@@ -77,6 +92,7 @@ public class Graph {
 			g2.setColor(Color.RED);
 			aStarEndHighlight.draw(g2, screen, origin, scale);
 		}
+
 	}
 
 	public void setHighlight(Node node) {
@@ -93,6 +109,14 @@ public class Graph {
 
 	public void setHighlight(Collection<Road> roads) {
 		this.highlightedRoads = roads;
+	}
+
+	public void setHighlightSeg(Collection<Segment> segments) {
+		this.highlightedSegments = segments;
+	}
+
+	public void setHighlightAP(Collection<Node> APNodes) {
+		this.APHighlight = APNodes;
 	}
 }
 
