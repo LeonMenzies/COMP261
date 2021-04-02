@@ -20,6 +20,7 @@ public class Node {
 	public final Location location;
 	public final Collection<Segment> outGoingSegments;
 	public final Collection<Segment> inComingSegments;
+
 	public Node prev;
 	public int depth;
 	public int reachBack;
@@ -30,7 +31,6 @@ public class Node {
 		this.location = Location.newFromLatLon(lat, lon);
 		this.outGoingSegments = new HashSet<Segment>();
 		this.inComingSegments = new HashSet<Segment>();
-		depth = -1;
 		children = new ArrayList<>();
 	}
 

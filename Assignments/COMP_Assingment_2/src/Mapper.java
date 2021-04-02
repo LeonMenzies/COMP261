@@ -44,6 +44,9 @@ public class Mapper extends GUI {
 	// how far away from a node you can click before it isn't counted.
 	public static final double MAX_CLICKED_DISTANCE = 0.30;
 
+	public final int INFINITY = Integer.MAX_VALUE;
+	List<Node> apNodes = new ArrayList<>();
+
 	// these two define the 'view' of the program, ie. where you're looking and
 	// how zoomed in you are.
 	private Location origin;
@@ -89,6 +92,7 @@ public class Mapper extends GUI {
 
 		// if it's close enough, highlight it and show some information.
 		if (clicked.distance(closest.location) < MAX_CLICKED_DISTANCE) {
+			graph.APHighlight.clear();
 			graph.setHighlight(closest);
 			getTextOutputArea().append(closest.toString() + "\n");
 
@@ -203,10 +207,10 @@ public class Mapper extends GUI {
 	}
 
 	/**
-	 * @param n
+	 * @param n - Given Node
 	 * @return - Distance as a double
 	 * 
-	 *         Find the heuristic value from a node to the end
+	 *         Find the heuristic value from a Node to the end
 	 */
 	public double h(Node n) {
 
@@ -220,47 +224,52 @@ public class Mapper extends GUI {
 	protected void onAPs() {
 
 		if (!graph.nodes.isEmpty()) {
+			apNodes = new ArrayList<>();
 			// Reset the depth of each node so it can be re-searched
 			for (Map.Entry<Integer, Node> resetAp : graph.nodes.entrySet()) {
-				resetAp.getValue().depth = -1;
+				resetAp.getValue().depth = INFINITY;
 			}
 
-			List<Node> APs = new ArrayList<>();
+			Node root = null;
 
-			Node root = graph.nodes.get(graph.nodes.keySet().toArray()[0]);
-			root.depth = 0;
-			int numSubTrees = 0;
-
-			for (Segment s : root.outGoingSegments) {
-
-				// Check both ends of the segment
-				if (s.start.equals(root)) {
-					if (s.end.depth == -1) {
-						System.out.println("Here");
-
-						iterArtPts(new APNode(s.end, 1, root));
-						numSubTrees++;
-					}
-				} else {
-					if (s.start.depth == -1) {
-						System.out.println(s);
-						iterArtPts(new APNode(s.start, 1, root));
-
-						numSubTrees++;
-					}
+			for (Map.Entry<Integer, Node> n : graph.nodes.entrySet()) {
+				// If the nodes has not been check set it as the root
+				if (n.getValue().depth == INFINITY) {
+					root = n.getValue();
 				}
 
-				if (numSubTrees > 1) {
-					APs.add(root);
+				root.depth = 0;
+				int numSubTrees = 0;
+
+				for (Segment s : root.outGoingSegments) {
+
+					// Check both ends of the segment
+					Node neighbour;
+					if (s.start.equals(root)) {
+						neighbour = s.end;
+					} else {
+						neighbour = s.start;
+					}
+
+					if (neighbour.depth == INFINITY) {
+						iterArtPts(new APNode(neighbour, 1, root));
+						numSubTrees++;
+
+					}
+
+					if (numSubTrees > 1) {
+						apNodes.add(root);
+					}
 				}
 			}
+			// Print total and highlight
+			getTextOutputArea().setText("Articulation Point: " + apNodes.size());
+			graph.setHighlightAP(apNodes);
 
 		}
 	}
 
 	private void iterArtPts(APNode apn) {
-
-		List<Node> apNodes = new ArrayList<>();
 
 		Stack<APNode> fringe = new Stack<APNode>();
 		fringe.add(apn);
@@ -269,43 +278,65 @@ public class Mapper extends GUI {
 			APNode peek = fringe.peek();
 			Node n = peek.node;
 			int d = peek.depth;
+			Node parent = peek.root;
 
-			if (n.depth == -1) {
+			// If Node has not been visited
+			if (n.depth == INFINITY) {
 				n.depth = d;
 				n.reachBack = d;
+				// Add children
 				for (Segment s : n.outGoingSegments) {
-					if (s.end == n) {
-						if (!s.start.equals(peek.root)) {
-							n.children.add(s.start);
-						}
-					} else if (s.start == n) {
-						if (!s.end.equals(peek.root)) {
-							n.children.add(s.end);
-						}
+
+					Node neighbour;
+					if (s.end.equals(n)) {
+						neighbour = s.start;
+					} else {
+						neighbour = s.end;
+					}
+
+					if (!neighbour.equals(parent)) {
+						n.children.add(neighbour);
 					}
 				}
 
+				// If Node has been visited (has children)
 			} else if (!n.children.isEmpty()) {
+
+				// Get minimum of the children
 				Node child = n.children.remove(0);
-				if (child.depth < -1) {
-					n.reachBack = child.depth;
+
+				if (child.depth < INFINITY) {
+					int dep;
+					if (child.depth < child.reachBack) {
+						dep = child.depth;
+					} else {
+						dep = child.reachBack;
+					}
+
+					n.reachBack = dep;
+
 				} else {
 					fringe.push(new APNode(child, d + 1, n));
 				}
 			} else {
 				if (!n.equals(apn.node)) {
-					peek.root.reachBack = n.reachBack;
-					if (n.reachBack >= peek.root.depth) {
-						apNodes.add(peek.root);
+					int rb;
+					if (parent.reachBack < n.reachBack) {
+						rb = parent.reachBack;
+					} else {
+						rb = n.reachBack;
+					}
+
+					parent.reachBack = rb;
+
+					if (n.reachBack >= parent.depth) {
+						apNodes.add(parent);
+
 					}
 				}
-				fringe.remove(peek);
+				fringe.pop();
 			}
-
 		}
-		graph.setHighlightAP(apNodes);
-		System.out.println(apNodes.size());
-
 	}
 
 	@Override
