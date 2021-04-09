@@ -9,9 +9,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.Stack;
 
 import javax.swing.JButton;
@@ -45,7 +47,7 @@ public class Mapper extends GUI {
 	public static final double MAX_CLICKED_DISTANCE = 0.30;
 
 	public final int INFINITY = Integer.MAX_VALUE;
-	List<Node> apNodes = new ArrayList<>();
+	Set<Node> apNodes = new HashSet<>();
 
 	// these two define the 'view' of the program, ie. where you're looking and
 	// how zoomed in you are.
@@ -94,6 +96,12 @@ public class Mapper extends GUI {
 		if (clicked.distance(closest.location) < MAX_CLICKED_DISTANCE) {
 			graph.APHighlight.clear();
 			graph.setHighlight(closest);
+
+			// Clear if using astar search
+			if (aStarToggle && start == null) {
+				getTextOutputArea().setText(null);
+			}
+
 			getTextOutputArea().append(closest.toString() + "\n");
 
 			graph.setHighlight(new ArrayList<>());
@@ -137,9 +145,15 @@ public class Mapper extends GUI {
 
 					Node neighbour;
 					if (seg.start.equals(n)) {
+
 						neighbour = seg.end;
 					} else {
 						neighbour = seg.start;
+
+						// Check if the street is one way
+						if (seg.road.oneWay) {
+							continue;
+						}
 					}
 
 					if (!visited.contains(neighbour)) {
@@ -164,7 +178,9 @@ public class Mapper extends GUI {
 	}
 
 	public void showPath(SearchNode search) {
+
 		List<Segment> highLightPath = new ArrayList<>();
+		Map<String, Double> roads = new LinkedHashMap<>();
 
 		// Find path
 		SearchNode path = search;
@@ -177,15 +193,38 @@ public class Mapper extends GUI {
 		}
 
 		Collections.reverse(highLightPath);
+		graph.setHighlightSeg(highLightPath);
 
+		// Add the segment to a map unless it exist update the length
 		for (Segment s : highLightPath) {
-			getTextOutputArea().append(s.road.toString() + "\n");
+			String r = s.road.name;
+
+			if (roads.containsKey(r)) {
+				roads.put(r, roads.get(r) + s.length);
+			} else {
+				roads.put(r, s.length);
+			}
+
 		}
 
-		graph.setHighlightSeg(highLightPath);
+		// print the roads and length
+		for (Map.Entry<String, Double> m : roads.entrySet()) {
+			getTextOutputArea().append("Road: " + m.getKey() + " Length: ");
+			calcDist(m.getValue());
+
+		}
 
 		start = null;
 		end = null;
+
+	}
+
+	// Convert a given kilometer to a kilometers/meters
+	public void calcDist(double distance) {
+
+		int k = (int) distance;
+		double m = (distance - k) * 100;
+		getTextOutputArea().append((int) distance + "km " + (int) m + "m\n");
 
 	}
 
@@ -224,7 +263,7 @@ public class Mapper extends GUI {
 	protected void onAPs() {
 
 		if (!graph.nodes.isEmpty()) {
-			apNodes = new ArrayList<>();
+			apNodes = new HashSet<>();
 			// Reset the depth of each node so it can be re-searched
 			for (Map.Entry<Integer, Node> resetAp : graph.nodes.entrySet()) {
 				resetAp.getValue().depth = INFINITY;
@@ -303,14 +342,14 @@ public class Mapper extends GUI {
 			} else if (!n.children.isEmpty()) {
 
 				// Get minimum of the children
-				Node child = n.children.remove(0);
+				Node child = n.children.poll();
 
 				if (child.depth < INFINITY) {
 					int dep;
-					if (child.depth < child.reachBack) {
+					if (child.depth < n.reachBack) {
 						dep = child.depth;
 					} else {
-						dep = child.reachBack;
+						dep = n.reachBack;
 					}
 
 					n.reachBack = dep;

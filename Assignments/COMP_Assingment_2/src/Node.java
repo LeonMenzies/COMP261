@@ -1,10 +1,9 @@
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Point;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Set;
 
 /**
@@ -14,7 +13,7 @@ import java.util.Set;
  * 
  * @author tony
  */
-public class Node {
+public class Node implements Comparable<Node> {
 
 	public final int nodeID;
 	public final Location location;
@@ -22,16 +21,16 @@ public class Node {
 	public final Collection<Segment> inComingSegments;
 
 	public Node prev;
-	public int depth;
+	public Integer depth;
 	public int reachBack;
-	public List<Node> children;
+	public PriorityQueue<Node> children;
 
 	public Node(int nodeID, double lat, double lon) {
 		this.nodeID = nodeID;
 		this.location = Location.newFromLatLon(lat, lon);
 		this.outGoingSegments = new HashSet<Segment>();
 		this.inComingSegments = new HashSet<Segment>();
-		children = new ArrayList<>();
+		children = new PriorityQueue<>();
 	}
 
 	public void addInComingSegment(Segment seg) {
@@ -55,6 +54,11 @@ public class Node {
 
 	public Location getLoc() {
 		return this.location;
+	}
+
+	@Override
+	public int compareTo(Node n) {
+		return this.depth.compareTo(n.depth);
 	}
 
 	public String toString() {

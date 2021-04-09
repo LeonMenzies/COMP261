@@ -14,8 +14,15 @@ public class Road {
 	public final String name, city;
 	public final Collection<Segment> components;
 
+	public final boolean oneWay;
+
 	public Road(int roadID, int type, String label, String city, int oneway, int speed, int roadclass, int notforcar,
 			int notforpede, int notforbicy) {
+		if (oneway == 0) {
+			this.oneWay = false;
+		} else {
+			this.oneWay = true;
+		}
 		this.roadID = roadID;
 		this.city = city;
 		this.name = label;
@@ -28,7 +35,7 @@ public class Road {
 
 	@Override
 	public String toString() {
-		return "Road [roadID=" + roadID + ", name=" + name + "]";
+		return "Road: " + name;
 	}
 
 }
