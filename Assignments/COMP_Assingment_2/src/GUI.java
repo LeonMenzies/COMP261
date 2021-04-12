@@ -1,4 +1,5 @@
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.GridLayout;
@@ -87,6 +88,11 @@ public abstract class GUI {
 	protected abstract void onAPs();
 
 	/**
+	 * toggle the search mode
+	 */
+	protected abstract void searchMode(JButton modeButton);
+
+	/**
 	 * Is called when the user has successfully selected a directory to load the
 	 * data files from. File objects representing the four files of interested are
 	 * passed to the method. The fourth File, polygons, might be null if it isn't
@@ -97,7 +103,7 @@ public abstract class GUI {
 	 * @param segments a File for roadSeg-roadID-length-nodeID-nodeID-coords.tab
 	 * @param polygons a File for polygon-shapes.mp
 	 */
-	protected abstract void onLoad(File nodes, File roads, File segments, File polygons);
+	protected abstract void onLoad(File nodes, File roads, File segments, File polygons, File restrictions);
 
 	/**
 	 * Is called when mouse wheel is scrolled
@@ -139,6 +145,8 @@ public abstract class GUI {
 	 * call this.
 	 */
 	public void redraw() {
+		frame.getContentPane().setBackground(Color.GREEN);
+
 		frame.repaint();
 	}
 
@@ -159,6 +167,7 @@ public abstract class GUI {
 	private static final String ROADS_FILENAME = "roadID-roadInfo.tab";
 	private static final String SEGS_FILENAME = "roadSeg-roadID-length-nodeID-nodeID-coords.tab";
 	private static final String POLYS_FILENAME = "polygon-shapes.mp";
+	private static final String RESTRCTIONS_FILENAME = "restrictions.tab";
 
 	/*
 	 * In Swing, everything is a component; buttons, graphics panes, tool tips, and
@@ -206,7 +215,7 @@ public abstract class GUI {
 		JButton load = new JButton("Load");
 		load.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ev) {
-				File nodes = null, roads = null, segments = null, polygons = null;
+				File nodes = null, roads = null, segments = null, polygons = null, restrctions = null;
 
 				// set up the file chooser
 				fileChooser.setCurrentDirectory(new File("."));
@@ -229,6 +238,8 @@ public abstract class GUI {
 							segments = f;
 						} else if (f.getName().equals(POLYS_FILENAME)) {
 							polygons = f;
+						} else if (f.getName().equals(RESTRCTIONS_FILENAME)) {
+							restrctions = f;
 						}
 					}
 
@@ -238,7 +249,7 @@ public abstract class GUI {
 						JOptionPane.showMessageDialog(frame, "Directory does not contain correct files", "Error",
 								JOptionPane.ERROR_MESSAGE);
 					} else {
-						onLoad(nodes, roads, segments, polygons);
+						onLoad(nodes, roads, segments, polygons, restrctions);
 						redraw();
 					}
 				}
@@ -309,6 +320,14 @@ public abstract class GUI {
 			}
 		});
 
+		JButton searchMode = new JButton("DIST");
+		searchMode.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent ev) {
+				searchMode(searchMode);
+				redraw();
+			}
+		});
+
 		// next, make the search box at the top-right. we manually fix
 		// it's size, and add an action listener to call your code when
 		// the user presses enter.
@@ -373,9 +392,12 @@ public abstract class GUI {
 		navigation.add(north);
 		navigation.add(in);
 		navigation.add(astar);
+		navigation.add(searchMode);
+
 		navigation.add(west);
 		navigation.add(south);
 		navigation.add(east);
+
 		navigation.add(aps);
 		controls.add(navigation);
 		controls.add(Box.createRigidArea(new Dimension(15, 0)));

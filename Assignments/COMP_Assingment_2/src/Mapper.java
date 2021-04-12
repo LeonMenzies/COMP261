@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -63,6 +62,7 @@ public class Mapper extends GUI {
 	private boolean aStarToggle = false;
 	private Node start = null;
 	private Node end = null;
+	private boolean distanceSearch = true;
 
 	@Override
 	protected void redraw(Graphics g) {
@@ -102,8 +102,9 @@ public class Mapper extends GUI {
 				getTextOutputArea().setText(null);
 			}
 
-			getTextOutputArea().append(closest.toString() + "\n");
-
+			if (!aStarToggle) {
+				getTextOutputArea().append(closest.toString() + "\n");
+			}
 			graph.setHighlight(new ArrayList<>());
 
 			// If a star search is enabled
@@ -116,13 +117,34 @@ public class Mapper extends GUI {
 				} else {
 					end = closest;
 					graph.endHighlight(closest);
-					aStarSearch();
+					if (!start.equals(end)) {
+
+						aStarSearchDistance();
+
+					}
 				}
 			}
 		}
 	}
 
-	private void aStarSearch() {
+	@Override
+	protected void onAStar(JButton aps) {
+
+		aStarToggle = !aStarToggle;
+
+		// Remove all colored nodes and roads
+		graph.endHighlight(null);
+		graph.startHighlight(null);
+		graph.setHighlight(new ArrayList<>());
+
+		if (aStarToggle) {
+			aps.setForeground(Color.GREEN);
+		} else {
+			aps.setForeground(Color.RED);
+		}
+	}
+
+	private void aStarSearchDistance() {
 		ArrayList<Node> visited = new ArrayList<>();
 		PriorityQueue<SearchNode> fringe = new PriorityQueue<>();
 		fringe.add(new SearchNode(start, null, 0.0, h(start), null));
@@ -156,10 +178,30 @@ public class Mapper extends GUI {
 						}
 					}
 
+					if (graph.restrictions != null) {
+
+						// Using a the current node as an intersection check where it has come from and
+						// is going to see i it is a valid path
+						if (s.prev != null && graph.restrictions.containsKey(n)) {
+							if (graph.restrictions.get(n).check(s.prev.node, n, neighbour)) {
+								continue;
+							}
+						}
+					}
+
 					if (!visited.contains(neighbour)) {
 
-						double g = s.g + seg.length;
-						double f = g + h(neighbour);
+						double g;
+						double f;
+
+						// Check if time or distance is being used
+						if (distanceSearch) {
+							g = s.g + seg.length;
+							f = g + h(neighbour);
+						} else {
+							g = s.g + seg.cost;
+							f = g + (h(neighbour) / 7 / 4);
+						}
 
 						fringe.add(new SearchNode(neighbour, s, g, f, seg));
 						fringe.add(new SearchNode(neighbour, s, g, f, seg));
@@ -180,7 +222,6 @@ public class Mapper extends GUI {
 	public void showPath(SearchNode search) {
 
 		List<Segment> highLightPath = new ArrayList<>();
-		Map<String, Double> roads = new LinkedHashMap<>();
 
 		// Find path
 		SearchNode path = search;
@@ -196,23 +237,41 @@ public class Mapper extends GUI {
 		graph.setHighlightSeg(highLightPath);
 
 		// Add the segment to a map unless it exist update the length
-		for (Segment s : highLightPath) {
-			String r = s.road.name;
+		String r = highLightPath.get(0).road.name;
+		double dist = highLightPath.get(0).length;
+		double totalDist = 0;
 
-			if (roads.containsKey(r)) {
-				roads.put(r, roads.get(r) + s.length);
+		double speeds = 0;
+		double classes = 0;
+
+		for (int i = 1; i < highLightPath.size(); i++) {
+			Segment s = highLightPath.get(i);
+
+			speeds += s.road.speed;
+			classes += s.road.roadclass;
+
+			if (s.road.name.equals(r)) {
+				dist += s.length;
 			} else {
-				roads.put(r, s.length);
+
+				getTextOutputArea().append("Road: " + r + " Length: ");
+				calcDist(dist);
+				totalDist += dist;
+
+				r = s.road.name;
+				dist = s.length;
+
 			}
-
 		}
 
-		// print the roads and length
-		for (Map.Entry<String, Double> m : roads.entrySet()) {
-			getTextOutputArea().append("Road: " + m.getKey() + " Length: ");
-			calcDist(m.getValue());
+		System.out.println("Total: " + (speeds + classes) / highLightPath.size());
 
-		}
+		getTextOutputArea().append("Road: " + r + " Length: ");
+		calcDist(dist);
+		totalDist += dist;
+
+		getTextOutputArea().append("Total distance = ");
+		calcDist(totalDist);
 
 		start = null;
 		end = null;
@@ -226,23 +285,6 @@ public class Mapper extends GUI {
 		double m = (distance - k) * 100;
 		getTextOutputArea().append((int) distance + "km " + (int) m + "m\n");
 
-	}
-
-	@Override
-	protected void onAStar(JButton aps) {
-
-		aStarToggle = !aStarToggle;
-
-		// Remove all colored nodes and roads
-		graph.endHighlight(null);
-		graph.startHighlight(null);
-		graph.setHighlight(new ArrayList<>());
-
-		if (aStarToggle) {
-			aps.setForeground(Color.GREEN);
-		} else {
-			aps.setForeground(Color.RED);
-		}
 	}
 
 	/**
@@ -378,6 +420,22 @@ public class Mapper extends GUI {
 		}
 	}
 
+	/**
+	 * Change the search mode between time and distance
+	 */
+	@Override
+	protected void searchMode(JButton modeButton) {
+
+		if (distanceSearch) {
+			distanceSearch = false;
+			modeButton.setText("TIME");
+		} else {
+			distanceSearch = true;
+			modeButton.setText("DIST");
+		}
+
+	}
+
 	@Override
 	protected void onSearch() {
 		if (trie == null)
@@ -480,8 +538,8 @@ public class Mapper extends GUI {
 	}
 
 	@Override
-	protected void onLoad(File nodes, File roads, File segments, File polygons) {
-		graph = new Graph(nodes, roads, segments, polygons);
+	protected void onLoad(File nodes, File roads, File segments, File polygons, File restrictions) {
+		graph = new Graph(nodes, roads, segments, polygons, restrictions);
 		trie = new Trie(graph.roads.values());
 		origin = new Location(-250, 250); // close enough
 		scale = 1;
@@ -513,7 +571,9 @@ public class Mapper extends GUI {
 				new File(
 						"/Users/leon/Documents/GitHub/COMP261/Assignments/COMP_Assingment_2/data/large/roadSeg-roadID-length-nodeID-nodeID-coords.tab"),
 				new File(
-						"/Users/leon/Documents/GitHub/COMP261/Assignments/COMP_Assingment_2/data/large/polygon-shapes.mp"));
+						"/Users/leon/Documents/GitHub/COMP261/Assignments/COMP_Assingment_2/data/large/polygon-shapes.mp"),
+				new File(
+						"/Users/leon/Documents/GitHub/COMP261/Assignments/COMP_Assingment_2/data/large/restrictions.tab"));
 	}
 
 }

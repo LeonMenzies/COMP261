@@ -2,10 +2,12 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Set;
 
 /**
@@ -70,8 +72,8 @@ public class Parser {
 				int notforpede = asInt(tokens[8]);
 				int notforbicy = asInt(tokens[8]);
 
-				Road road = new Road(roadID, type, label, city, oneway, speed,
-						roadclass, notforcar, notforpede, notforbicy);
+				Road road = new Road(roadID, type, label, city, oneway, speed, roadclass, notforcar, notforpede,
+						notforbicy);
 				map.put(roadID, road);
 			}
 
@@ -103,9 +105,94 @@ public class Parser {
 				for (int i = 4; i < tokens.length; i++)
 					coords[i - 4] = asDouble(tokens[i]);
 
-				Segment segment = new Segment(graph, roadID, length, node1ID,
-						node2ID, coords);
+				Segment segment = new Segment(graph, roadID, length, node1ID, node2ID, coords);
 				set.add(segment);
+			}
+
+			br.close();
+		} catch (IOException e) {
+			throw new RuntimeException("file reading failed.");
+		}
+
+		return set;
+	}
+
+	public static Collection<PolygonShape> parsePolygons(File polygons, Graph graph) {
+		Set<PolygonShape> set = new HashSet<PolygonShape>();
+
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(polygons));
+			br.readLine(); // throw away the top line of the file.
+			String line;
+
+			String type = null;
+			String[] coords = null;
+
+			int count = 0;
+
+			while ((line = br.readLine()) != null) {
+
+				if (type != null && coords != null) {
+
+					ArrayList<Location> polyCoords = new ArrayList<>();
+
+					for (int i = 0; i < coords.length - 1; i += 2) {
+
+						polyCoords.add(Location.newFromLatLon(Double.parseDouble(coords[i]),
+								Double.parseDouble(coords[i + 1])));
+					}
+
+					set.add(new PolygonShape(type, polyCoords));
+					count++;
+
+				}
+
+				if (line.startsWith("Type=")) {
+					type = line.replace("Type=", "");
+
+				} else if (line.startsWith("Data0=")) {
+					line = line.replace("Data0=", "");
+					coords = line.replaceAll("[\\)\\(\\s]", "").split(",");
+
+				} else if (line.startsWith("[END]")) {
+					type = null;
+					coords = null;
+				} else {
+					continue;
+				}
+
+			}
+
+			br.close();
+		} catch (IOException e) {
+			throw new RuntimeException("file reading failed.");
+		}
+
+		return set;
+	}
+
+	public static Map<Node, Restriction> parseRestrictions(File restrictions, Graph graph) {
+		Map<Node, Restriction> set = new HashMap<>();
+
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(restrictions));
+			br.readLine(); // throw away the top line of the file.
+			String line;
+
+			while ((line = br.readLine()) != null) {
+
+				Scanner sc = new Scanner(line);
+
+				while (sc.hasNextInt()) {
+					Node nodeId1 = graph.nodes.get(sc.nextInt());
+					Road roadId1 = graph.roads.get(sc.nextInt());
+					Node intersection = graph.nodes.get(sc.nextInt());
+					Road roadId2 = graph.roads.get(sc.nextInt());
+					Node nodeId2 = graph.nodes.get(sc.nextInt());
+					set.put(intersection, new Restriction(intersection, nodeId1, nodeId2, roadId1, roadId2));
+				}
+				sc.close();
+
 			}
 
 			br.close();

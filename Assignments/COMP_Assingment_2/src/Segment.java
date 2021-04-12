@@ -14,6 +14,8 @@ public class Segment {
 	public final Road road;
 	public final Node start, end;
 	public final double length;
+	public final double cost;
+	public final double time;
 	public final Location[] points;
 
 	public Segment(Graph graph, int roadID, double length, int node1ID, int node2ID, double[] coords) {
@@ -22,6 +24,10 @@ public class Segment {
 		this.start = graph.nodes.get(node1ID);
 		this.end = graph.nodes.get(node2ID);
 		this.length = length;
+		this.cost = length / road.speed / road.roadclass;
+
+		// Calculate the time taken to travel this segment
+		this.time = length / road.speedLimit;
 
 		points = new Location[coords.length / 2];
 		for (int i = 0; i < points.length; i++) {
@@ -41,6 +47,7 @@ public class Segment {
 			Point p = points[i - 1].asPoint(origin, scale);
 			Point q = points[i].asPoint(origin, scale);
 			g.drawLine(p.x, p.y, q.x, q.y);
+
 		}
 	}
 }
