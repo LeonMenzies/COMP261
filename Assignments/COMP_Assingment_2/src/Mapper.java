@@ -119,7 +119,7 @@ public class Mapper extends GUI {
 					graph.endHighlight(closest);
 					if (!start.equals(end)) {
 
-						aStarSearchDistance();
+						aStarSearch();
 
 					}
 				}
@@ -144,12 +144,14 @@ public class Mapper extends GUI {
 		}
 	}
 
-	private void aStarSearchDistance() {
+	private void aStarSearch() {
 		ArrayList<Node> visited = new ArrayList<>();
 		PriorityQueue<SearchNode> fringe = new PriorityQueue<>();
+
 		fringe.add(new SearchNode(start, null, 0.0, h(start), null));
 
 		while (!fringe.isEmpty()) {
+
 			SearchNode s = fringe.poll();
 			Node n = s.node;
 
@@ -194,16 +196,14 @@ public class Mapper extends GUI {
 						double g;
 						double f;
 
-						// Check if time or distance is being used
 						if (distanceSearch) {
 							g = s.g + seg.length;
-							f = g + h(neighbour);
 						} else {
 							g = s.g + seg.cost;
-							f = g + (h(neighbour) / 7 / 4);
 						}
 
-						fringe.add(new SearchNode(neighbour, s, g, f, seg));
+						f = g + h(neighbour);
+
 						fringe.add(new SearchNode(neighbour, s, g, f, seg));
 					}
 				}
@@ -241,14 +241,8 @@ public class Mapper extends GUI {
 		double dist = highLightPath.get(0).length;
 		double totalDist = 0;
 
-		double speeds = 0;
-		double classes = 0;
-
 		for (int i = 1; i < highLightPath.size(); i++) {
 			Segment s = highLightPath.get(i);
-
-			speeds += s.road.speed;
-			classes += s.road.roadclass;
 
 			if (s.road.name.equals(r)) {
 				dist += s.length;
@@ -263,8 +257,6 @@ public class Mapper extends GUI {
 
 			}
 		}
-
-		System.out.println("Total: " + (speeds + classes) / highLightPath.size());
 
 		getTextOutputArea().append("Road: " + r + " Length: ");
 		calcDist(dist);
@@ -298,7 +290,13 @@ public class Mapper extends GUI {
 		double ac = Math.abs(end.getLoc().x - n.getLoc().x);
 		double cb = Math.abs(end.getLoc().y - n.getLoc().y);
 
-		return Math.hypot(ac, cb);
+		double toReturn = Math.hypot(ac, cb);
+
+		if (distanceSearch) {
+			return toReturn;
+		} else {
+			return (toReturn / 8) / 5;
+		}
 	}
 
 	@Override

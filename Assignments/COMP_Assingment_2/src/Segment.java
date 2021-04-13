@@ -24,7 +24,11 @@ public class Segment {
 		this.start = graph.nodes.get(node1ID);
 		this.end = graph.nodes.get(node2ID);
 		this.length = length;
-		this.cost = length / road.speed / road.roadclass;
+
+		int speed = road.speed + 1;
+		int roadClass = road.roadclass + 1;
+
+		this.cost = length / speed / roadClass;
 
 		// Calculate the time taken to travel this segment
 		this.time = length / road.speedLimit;
