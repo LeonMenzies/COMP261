@@ -431,7 +431,6 @@ public class Mapper extends GUI {
 			distanceSearch = true;
 			modeButton.setText("DIST");
 		}
-
 	}
 
 	@Override
@@ -561,19 +560,9 @@ public class Mapper extends GUI {
 	}
 
 	public static void main(String[] args) {
-		Mapper m = new Mapper();
-		m.onLoad(new File(
-				"/Users/leon/Documents/GitHub/COMP261/Assignments/COMP_Assingment_2/data/large/nodeID-lat-lon.tab"),
-				new File(
-						"/Users/leon/Documents/GitHub/COMP261/Assignments/COMP_Assingment_2/data/large/roadID-roadInfo.tab"),
-				new File(
-						"/Users/leon/Documents/GitHub/COMP261/Assignments/COMP_Assingment_2/data/large/roadSeg-roadID-length-nodeID-nodeID-coords.tab"),
-				new File(
-						"/Users/leon/Documents/GitHub/COMP261/Assignments/COMP_Assingment_2/data/large/polygon-shapes.mp"),
-				new File(
-						"/Users/leon/Documents/GitHub/COMP261/Assignments/COMP_Assingment_2/data/large/restrictions.tab"));
-	}
+		new Mapper();
 
+	}
 }
 
 // code for COMP261 assignments
