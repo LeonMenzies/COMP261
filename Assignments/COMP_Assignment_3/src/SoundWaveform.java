@@ -88,7 +88,6 @@ public class SoundWaveform {
 		for (int i = 0; i < spectrum.size(); i++) {
 			if (i == MAX_SAMPLES)
 				break;
-			System.out.println(spectrum.get(i));
 			double value = spectrum.get(i).mod();
 			max = Math.max(max, value);
 			spectrumMod.add(spectrum.get(i).mod());
@@ -120,90 +119,225 @@ public class SoundWaveform {
 		UI.println("Printing completed!");
 	}
 
+	/*
+	 * This DFT method converts a waveform of doubles into a spectrum of complex
+	 * numbers to display the frequency
+	 */
 	public void dft() {
 		UI.clearText();
 		UI.println("DFT in process, please wait...");
 
-		// TODO
-		// Add your code here: you should transform from the waveform to the spectrum
+		// Convert waveform to complex number array
+		ArrayList<ComplexNumber> newSpec = new ArrayList<>();
+		for (double d : waveform) {
+			newSpec.add(new ComplexNumber(d, 0));
+		}
 
-		for (double k = 0; k < waveform.size(); k++) {
+		for (int k = 0; k < waveform.size(); k++) {
 
 			ComplexNumber sum = new ComplexNumber();
 
-			// for (double d : waveform) {
 			for (int n = 0; n < waveform.size(); n++) {
 
-				double d = waveform.get(n);
-
-				// double kth = -2 * k * Math.PI / waveform.size();
-				// double t = -i * k * ((2 * Math.PI) / (waveform.size()));
+				// Calculate the term
 				double t = -n * k * 2 * Math.PI / waveform.size();
 
-				ComplexNumber term = new ComplexNumber(Math.cos(t), Math.sin(t));
-
-				// c = c.pow(new ComplexNumber(d, 0));
-
-				sum = sum.addition(new ComplexNumber(d, 0).multiply(term));
-
-//				double term = (-2 * Math.PI * k) / waveform.size();
-//
-//				// ComplexNumber exp = new ComplexNumber(Math.cos(term), Math.sin(term));
-//				
-//				double ihatecomp = count * k * ((2 * Math.PI) / waveform.size());
-//				ComplexNumber e = new ComplexNumber(0.0, );
-//				
-//				ComplexNumber exp = new ComplexNumber(Math.pow(Math.E, sum.getRe()) * Math.cos(term),
-//						Math.pow(Math.E, sum.getRe()) * Math.sin(term));
-//
-//				// sum = sum.addition(new ComplexNumber(d, 0).multiply(exp));
-//				exp = exp.multiply(new ComplexNumber(d, exp.getIm()));
-//				sum = sum.addition(exp);
+				// Calculate the e value using Euler's formula
+				ComplexNumber exp = new ComplexNumber(Math.cos(t), Math.sin(t));
+				sum = sum.addition(newSpec.get(n).multiply(exp));
 
 			}
-			System.out.println(sum);
 
+			// Finally add the complex number to the spectrum
 			spectrum.add(sum);
-
 		}
 
 		UI.println("DFT completed!");
 		waveform.clear();
 	}
 
+	/*
+	 * This method is the inverse of dft. It simply takes the spectrum of complex
+	 * numbers and converts them back into a waveform of doubles
+	 */
 	public void idft() {
 		UI.clearText();
 		UI.println("IDFT in process, please wait...");
 
-		// TODO
-		// Add your code here: you should transform from the spectrum to the waveform
+		ArrayList<ComplexNumber> newSpec = new ArrayList<>(spectrum);
+
+		for (int k = 0; k < spectrum.size(); k++) {
+
+			ComplexNumber sum = new ComplexNumber();
+
+			for (int n = 0; n < spectrum.size(); n++) {
+
+				double t = n * k * 2 * Math.PI / spectrum.size();
+
+				ComplexNumber exp = new ComplexNumber(Math.cos(t), Math.sin(t));
+
+				sum = sum.addition(newSpec.get(n).multiply(exp));
+
+			}
+
+			waveform.add(sum.getRe() * 1 / spectrum.size());
+		}
 
 		UI.println("IDFT completed!");
-
 		spectrum.clear();
 	}
 
+	/*
+	 * Helper method for checking a number is to the power of 2
+	 */
+	private boolean isPowerOfTwo(int number) {
+		return number > 0 && ((number & (number - 1)) == 0);
+	}
+
+	/*
+	 * FFT is used to compute the transformation in O(nlog(n)) instead of n^2 for
+	 * much better efficiency using divide and conquer
+	 */
 	public void fft() {
 		UI.clearText();
 		UI.println("FFT in process, please wait...");
 
-		// TODO
-		// Add your code here: you should transform from the waveform to the spectrum
+		// Check that there is numbers to compute
+		if (waveform.isEmpty()) {
+			return;
+		}
+
+		// Check that the wave form is over the power 2 so the divide and conquer is not
+		// trying to split un-even bins
+		while (!isPowerOfTwo(waveform.size())) {
+			waveform.remove(waveform.size() - 1);
+		}
+
+		ArrayList<ComplexNumber> newSpec = new ArrayList<>();
+		for (double d : waveform) {
+			newSpec.add(new ComplexNumber(d, 0));
+		}
+
+		// Call the recursive helper method
+		spectrum = fftHelper(newSpec);
 
 		UI.println("FFT completed!");
 		waveform.clear();
 	}
 
+	/*
+	 * This method handles the recursion for the fft algorithm
+	 */
+	public ArrayList<ComplexNumber> fftHelper(ArrayList<ComplexNumber> x) {
+		int N = x.size();
+
+		// Base case
+		if (N == 1) {
+			return x;
+		}
+
+		ArrayList<ComplexNumber> xeven = new ArrayList<>();
+		ArrayList<ComplexNumber> xodd = new ArrayList<>();
+
+		// Split the array into odd and evens using the index of i
+		for (int i = 0; i < x.size(); i += 2) {
+			xeven.add(x.get(i));
+			xodd.add(x.get(i + 1));
+		}
+
+		// Go a layer deeper into the recursion
+		ArrayList<ComplexNumber> Xeven = fftHelper(xeven);
+		ArrayList<ComplexNumber> Xodd = fftHelper(xodd);
+
+		ComplexNumber[] X = new ComplexNumber[N];
+
+		// Calculate the terms, then add and multiply using the e term calculated with
+		// Euler's formula
+		for (int k = 0; k < N / 2; k++) {
+			double t1 = W(k, N);
+			double t2 = W(k + N / 2, N);
+
+			X[k] = (Xeven.get(k).addition(Xodd.get(k).multiply(new ComplexNumber(Math.cos(t1), Math.sin(t1)))));
+			X[k + N / 2] = (Xeven.get(k).addition(Xodd.get(k).multiply(new ComplexNumber(Math.cos(t2), Math.sin(t2)))));
+
+		}
+
+		return new ArrayList<ComplexNumber>(Arrays.asList(X));
+	}
+
+	/*
+	 * Helper method for calculating the term
+	 */
+	public double W(int k, int size) {
+		return -k * 2 * Math.PI / size;
+
+	}
+
+	/*
+	 * This is the inverse of fft for converting the spectrum of complex numbers
+	 * back into a waveform of doubles
+	 */
 	public void ifft() {
 		UI.clearText();
 		UI.println("IFFT in process, please wait...");
 
-		// TODO
-		// Add your code here: you should transform from the spectrum to the waveform
+		if (spectrum.isEmpty()) {
+			return;
+		}
+
+		while (!isPowerOfTwo(spectrum.size())) {
+			spectrum.remove(spectrum.size() - 1);
+		}
+
+		for (ComplexNumber c : fftHelper(spectrum)) {
+			waveform.add(c.getRe() * 1 / spectrum.size());
+		}
+
+		for (Double d : waveform) {
+			System.out.println(d);
+		}
 
 		UI.println("IFFT completed!");
 
 		spectrum.clear();
+	}
+
+	public ArrayList<ComplexNumber> ifftHelper(ArrayList<ComplexNumber> x) {
+		int N = x.size();
+
+		if (N == 1) {
+			return x;
+		}
+
+		ArrayList<ComplexNumber> xeven = new ArrayList<>();
+		ArrayList<ComplexNumber> xodd = new ArrayList<>();
+
+		for (int i = 0; i < x.size(); i += 2) {
+			xeven.add(x.get(i));
+			xodd.add(x.get(i + 1));
+		}
+
+		ArrayList<ComplexNumber> Xeven = fftHelper(xeven);
+		ArrayList<ComplexNumber> Xodd = fftHelper(xodd);
+
+		ComplexNumber[] X = new ComplexNumber[N];
+
+		for (int k = 0; k < N / 2; k++) {
+
+			double t1 = W(k, N);
+			double t2 = W(k + N / 2, N);
+
+			X[k] = (Xeven.get(k).addition(Xodd.get(k).multiply(new ComplexNumber(Math.cos(t1), Math.sin(t1)))));
+			X[k + N / 2] = (Xeven.get(k).addition(Xodd.get(k).multiply(new ComplexNumber(Math.cos(t2), Math.sin(t2)))));
+
+		}
+
+		return new ArrayList<ComplexNumber>(Arrays.asList(X));
+	}
+
+	public double iW(int k, int size) {
+		return k * 2 * Math.PI / size;
+
 	}
 
 	/**
@@ -220,9 +354,11 @@ public class SoundWaveform {
 		UI.clearText();
 		UI.println("Loading...");
 
-		// waveform = new ArrayList<>(Arrays.asList(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0,
-		// 8.0));
-		waveform = new ArrayList<>(Arrays.asList(1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0));
+		ArrayList<Double> test1 = new ArrayList<>(Arrays.asList(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0));
+		ArrayList<Double> test2 = new ArrayList<>(Arrays.asList(1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0));
+		ArrayList<Double> test3 = new ArrayList<>(Arrays.asList(1.0, 2.0, 3.0, 4.0, 4.0, 3.0, 2.0, 1.0));
+
+		waveform = test3;
 
 		// waveform = WaveformLoader.doLoad();
 
