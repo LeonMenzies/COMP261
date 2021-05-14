@@ -110,12 +110,5 @@ public class ComplexNumber {
 				this.real * c.getIm() + this.imaginary * c.getRe());
 	}
 
-	public ComplexNumber exp(ComplexNumber c) {
-		double re = Math.exp(this.real) * Math.cos(this.imaginary);
-		double im = Math.exp(this.real) * Math.sin(this.imaginary);
-
-		return new ComplexNumber(re, im);
-
-	}
-
+	
 }

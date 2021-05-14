@@ -31,6 +31,7 @@ public class SoundWaveform {
 	public static final int ZERO_LINE = 310;
 	public static final int X_STEP = 2; // pixels between samples
 	public static final int GRAPH_WIDTH = MAX_SAMPLES * X_STEP;
+	public double scaling =0;
 
 	private ArrayList<Double> waveform = new ArrayList<Double>(); // the displayed waveform
 	private ArrayList<ComplexNumber> spectrum = new ArrayList<ComplexNumber>(); // the spectrum: length/mod of each X(k)
@@ -93,7 +94,8 @@ public class SoundWaveform {
 			spectrumMod.add(spectrum.get(i).mod());
 		}
 
-		double scaling = 300 / max;
+		 scaling = 300 / max;
+		
 		for (int i = 0; i < spectrumMod.size(); i++) {
 			spectrumMod.set(i, spectrumMod.get(i) * scaling);
 		}
@@ -112,7 +114,7 @@ public class SoundWaveform {
 			if (i > MAX_SAMPLES) {
 				UI.setColor(Color.red);
 			}
-			UI.drawLine(x, y1, x + X_STEP, y2);
+			UI.drawLine(x, y1, x, y2);
 			x = x + X_STEP;
 		}
 
@@ -126,6 +128,13 @@ public class SoundWaveform {
 	public void dft() {
 		UI.clearText();
 		UI.println("DFT in process, please wait...");
+		long startTime = System.currentTimeMillis();
+
+
+		//Cut tail
+//		while (!isPowerOfTwo(waveform.size())) {
+//			waveform.remove(waveform.size() - 1);
+//		}
 
 		// Convert waveform to complex number array
 		ArrayList<ComplexNumber> newSpec = new ArrayList<>();
@@ -151,8 +160,12 @@ public class SoundWaveform {
 			// Finally add the complex number to the spectrum
 			spectrum.add(sum);
 		}
+		
+		long endTime = System.currentTimeMillis();
 
-		UI.println("DFT completed!");
+
+		UI.println("DFT completed. time elapsed: " + (endTime - startTime) + " milliseconds");
+
 		waveform.clear();
 	}
 
@@ -163,6 +176,8 @@ public class SoundWaveform {
 	public void idft() {
 		UI.clearText();
 		UI.println("IDFT in process, please wait...");
+		long startTime = System.currentTimeMillis();
+
 
 		ArrayList<ComplexNumber> newSpec = new ArrayList<>(spectrum);
 
@@ -182,8 +197,12 @@ public class SoundWaveform {
 
 			waveform.add(sum.getRe() * 1 / spectrum.size());
 		}
+		
+		long endTime = System.currentTimeMillis();
 
-		UI.println("IDFT completed!");
+
+		UI.println("IDFT completed. time elapsed: " + (endTime - startTime) + " milliseconds");
+
 		spectrum.clear();
 	}
 
@@ -201,6 +220,8 @@ public class SoundWaveform {
 	public void fft() {
 		UI.clearText();
 		UI.println("FFT in process, please wait...");
+		long startTime = System.currentTimeMillis();
+
 
 		// Check that there is numbers to compute
 		if (waveform.isEmpty()) {
@@ -220,8 +241,11 @@ public class SoundWaveform {
 
 		// Call the recursive helper method
 		spectrum = fftHelper(newSpec);
+		long endTime = System.currentTimeMillis();
 
-		UI.println("FFT completed!");
+
+		UI.println("FFT completed. time elapsed: " + (endTime - startTime) + " milliseconds");
+
 		waveform.clear();
 	}
 
@@ -280,6 +304,8 @@ public class SoundWaveform {
 	public void ifft() {
 		UI.clearText();
 		UI.println("IFFT in process, please wait...");
+		long startTime = System.currentTimeMillis();
+
 
 		if (spectrum.isEmpty()) {
 			return;
@@ -289,15 +315,14 @@ public class SoundWaveform {
 			spectrum.remove(spectrum.size() - 1);
 		}
 
-		for (ComplexNumber c : fftHelper(spectrum)) {
+		for (ComplexNumber c : ifftHelper(spectrum)) {
 			waveform.add(c.getRe() * 1 / spectrum.size());
 		}
 
-		for (Double d : waveform) {
-			System.out.println(d);
-		}
+		long endTime = System.currentTimeMillis();
 
-		UI.println("IFFT completed!");
+
+		UI.println("IFFT completed. time elapsed: " + (endTime - startTime) + " milliseconds");
 
 		spectrum.clear();
 	}
@@ -317,15 +342,15 @@ public class SoundWaveform {
 			xodd.add(x.get(i + 1));
 		}
 
-		ArrayList<ComplexNumber> Xeven = fftHelper(xeven);
-		ArrayList<ComplexNumber> Xodd = fftHelper(xodd);
+		ArrayList<ComplexNumber> Xeven = ifftHelper(xeven);
+		ArrayList<ComplexNumber> Xodd = ifftHelper(xodd);
 
 		ComplexNumber[] X = new ComplexNumber[N];
 
 		for (int k = 0; k < N / 2; k++) {
 
-			double t1 = W(k, N);
-			double t2 = W(k + N / 2, N);
+			double t1 = iW(k, N);
+			double t2 = iW(k + N / 2, N);
 
 			X[k] = (Xeven.get(k).addition(Xodd.get(k).multiply(new ComplexNumber(Math.cos(t1), Math.sin(t1)))));
 			X[k + N / 2] = (Xeven.get(k).addition(Xodd.get(k).multiply(new ComplexNumber(Math.cos(t2), Math.sin(t2)))));
@@ -337,6 +362,34 @@ public class SoundWaveform {
 
 	public double iW(int k, int size) {
 		return k * 2 * Math.PI / size;
+
+	}
+
+	public void doMouse(String v, double x, double y) {
+		int index = ((int) x - GRAPH_LEFT) / 2;
+		double newY = ZERO_LINE - y;
+
+		if (!spectrum.isEmpty() && index >= 0 && index < spectrum.size() && newY > 0 && index <= GRAPH_WIDTH) {
+			
+			if (v.equals("pressed")) {
+				
+				ComplexNumber c = spectrum.get(index);
+				
+				
+				double oldy = c.mod() * scaling;
+				
+				double toMult = newY/oldy;
+				
+				spectrum.set(index, new ComplexNumber(c.getRe() * toMult, c.getIm() * toMult));
+				
+			
+				displaySpectrum();
+				UI.println("From index: " + index + "\nGot Frequency: " + c);
+
+
+			}
+
+		}
 
 	}
 
@@ -354,13 +407,14 @@ public class SoundWaveform {
 		UI.clearText();
 		UI.println("Loading...");
 
+		//Arrays for testing
 		ArrayList<Double> test1 = new ArrayList<>(Arrays.asList(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0));
 		ArrayList<Double> test2 = new ArrayList<>(Arrays.asList(1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0));
 		ArrayList<Double> test3 = new ArrayList<>(Arrays.asList(1.0, 2.0, 3.0, 4.0, 4.0, 3.0, 2.0, 1.0));
 
-		waveform = test3;
+		//waveform = test1;
 
-		// waveform = WaveformLoader.doLoad();
+		waveform = WaveformLoader.doLoad();
 
 		this.displayWaveform();
 
@@ -379,7 +433,7 @@ public class SoundWaveform {
 		UI.addButton("Save", wfm::doSave);
 		UI.addButton("Load", wfm::doLoad);
 		UI.addButton("Quit", UI::quit);
-		// UI.setMouseMotionListener(wfm::doMouse);
+		UI.setMouseMotionListener(wfm::doMouse);
 		UI.setWindowSize(950, 630);
 	}
 }
