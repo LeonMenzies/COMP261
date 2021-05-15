@@ -32,17 +32,6 @@ class MoveNode implements RobotProgramNode {
 	}
 }
 
-class TakeFuleNode implements RobotProgramNode {
-	@Override
-	public void execute(Robot robot) {
-		robot.takeFuel();
-	}
-
-	public String toString() {
-		return "takeFuel;";
-	}
-}
-
 class WaitNode implements RobotProgramNode {
 	@Override
 	public void execute(Robot robot) {
@@ -90,142 +79,150 @@ class TakeFuelNode implements RobotProgramNode {
 	}
 }
 
-class LessThanNode implements RobotProgramNode {
-
-	RobotProgramNode lessThan;
+class LessThanNode implements RobotProgramNodeEvaluateBoolean {
 
 	@Override
-	public void execute(Robot robot) {
+	public boolean evaluate(Robot robot) {
+//		if (rpne.evaluate(robot) < val) {
+//			return true;
+//		} else {
+//			return false;
+//		}
+		return true;
 
 	}
 
 	public String toString() {
-		return "lt;";
+		return "lt";
 	}
 }
 
-class GreaterThan implements RobotProgramNode {
-
-	RobotProgramNode greaterThan;
+class GreaterThanNode implements RobotProgramNodeEvaluateBoolean {
 
 	@Override
-	public void execute(Robot robot) {
+	public boolean evaluate(Robot robot) {
 
+//		if (rpne.evaluate(robot) > val) {
+//			return true;
+//		} else {
+//			return false;
+//		}
+
+		return true;
 	}
 
 	public String toString() {
-		return "gt;";
+		return "gt";
 	}
 }
 
-class EqualNode implements RobotProgramNode {
-
-	RobotProgramNode equal;
+class EqualNode implements RobotProgramNodeEvaluateBoolean {
 
 	@Override
-	public void execute(Robot robot) {
+	public boolean evaluate(Robot robot) {
+//		if (rpne.evaluate(robot) == val) {
+//			return true;
+//		} else {
+//			return false;
+//		}
 
-	}
-
-	public String toString() {
-		return "eq;";
+		return true;
 	}
 }
 
-class FuelLeftNode implements RobotProgramNode {
-
-	int fuelLeft;
+class FuelLeftNode implements RobotProgramNodeEvaluateInt {
 
 	@Override
-	public void execute(Robot robot) {
-		fuelLeft = robot.getFuel();
+	public int evaluate(Robot robot) {
+		return robot.getFuel();
 	}
 
 	public String toString() {
-		return "fuelLeft;";
+		return "fuelLeft";
 	}
 }
 
-class OppLRNode implements RobotProgramNode {
-
-	int oppLR;
+class OppLRNode implements RobotProgramNodeEvaluateInt {
 
 	@Override
-	public void execute(Robot robot) {
-		oppLR = robot.getOpponentLR();
+	public int evaluate(Robot robot) {
+		return robot.getOpponentLR();
 	}
 
 	public String toString() {
-		return "oppLR;";
+		return "oppLR";
 	}
 }
 
-class OppFBNode implements RobotProgramNode {
-
-	int oppFB;
+class OppFBNode implements RobotProgramNodeEvaluateInt {
 
 	@Override
-	public void execute(Robot robot) {
-		oppFB = robot.getOpponentFB();
+	public int evaluate(Robot robot) {
+		return robot.getOpponentFB();
 	}
 
 	public String toString() {
-		return "oppFB;";
+		return "oppFB";
 	}
 }
 
-class NumBarrelsNode implements RobotProgramNode {
-
-	int numBarrels;
+class NumBarrelsNode implements RobotProgramNodeEvaluateInt {
 
 	@Override
-	public void execute(Robot robot) {
-		numBarrels = robot.numBarrels();
+	public int evaluate(Robot robot) {
+		return robot.numBarrels();
 	}
 
 	public String toString() {
-		return "numBarrels;";
+		return "numBarrels";
 	}
 }
 
-class BarrelLRNode implements RobotProgramNode {
-
-	int barrelLR;
+class BarrelLRNode implements RobotProgramNodeEvaluateInt {
 
 	@Override
-	public void execute(Robot robot) {
-		barrelLR = robot.getClosestBarrelLR();
+	public int evaluate(Robot robot) {
+		return robot.getClosestBarrelLR();
 	}
 
 	public String toString() {
-		return "barrelLR;";
+		return "barrelLR";
 	}
 }
 
-class BarrelFBNode implements RobotProgramNode {
-
-	int barrelFB;
+class BarrelFBNode implements RobotProgramNodeEvaluateInt {
 
 	@Override
-	public void execute(Robot robot) {
-		barrelFB = robot.getClosestBarrelFB();
+	public int evaluate(Robot robot) {
+		return robot.getClosestBarrelFB();
 	}
 
 	public String toString() {
-		return "barrelFb;";
+		return "barrelFb";
 	}
 }
 
-class WallDistNode implements RobotProgramNode {
-
-	int wallDist;
+class WallDistNode implements RobotProgramNodeEvaluateInt {
 
 	@Override
-	public void execute(Robot robot) {
-		wallDist = robot.getDistanceToWall();
+	public int evaluate(Robot robot) {
+		return robot.getDistanceToWall();
 	}
 
 	public String toString() {
-		return "wallDist;";
+		return "wallDist";
+	}
+
+}
+
+class TurnArroundNode implements RobotProgramNode {
+
+	@Override
+	public void execute(Robot robot) {
+		robot.turnAround();
+	}
+
+	public String toString() {
+		return "turnAround;";
 	}
 }

@@ -42,7 +42,6 @@ class StmtNode implements RobotProgramNode {
 	}
 
 	public String toString() {
-
 		return ACT.toString();
 	}
 }
@@ -119,17 +118,19 @@ class BlockNode implements RobotProgramNode {
 
 class IfNode implements RobotProgramNode {
 	final RobotProgramNode BLOCK;
-	final RobotProgramNode CODN;
+	final RobotProgramNodeEvaluateBoolean COND;
 
-	public IfNode(RobotProgramNode cond, RobotProgramNode block) {
+	public IfNode(RobotProgramNodeEvaluateBoolean cond, RobotProgramNode block) {
 		BLOCK = block;
 		COND = cond;
+
 	}
 
 	@Override
 	public void execute(Robot robot) {
-
-		BLOCK.execute(robot);
+		if (COND.evaluate(robot) == true) {
+			BLOCK.execute(robot);
+		}
 	}
 
 	public String toString() {
@@ -140,14 +141,19 @@ class IfNode implements RobotProgramNode {
 
 class WhileNode implements RobotProgramNode {
 	final RobotProgramNode BLOCK;
+	final RobotProgramNodeEvaluateBoolean COND;
 
-	public WhileNode(RobotProgramNode n) {
-		BLOCK = n;
+	public WhileNode(RobotProgramNodeEvaluateBoolean cond, RobotProgramNode block) {
+		BLOCK = block;
+		COND = cond;
+
 	}
 
 	@Override
 	public void execute(Robot robot) {
-		BLOCK.execute(robot);
+		while (COND.evaluate(robot) == true) {
+			BLOCK.execute(robot);
+		}
 	}
 
 	public String toString() {
@@ -156,27 +162,45 @@ class WhileNode implements RobotProgramNode {
 	}
 }
 
-class CondNode implements RobotProgramNode {
-	final String RELOP;
-	final RobotProgramNode SEN;
-	final RobotProgramNode NUM;
+class CondNode implements RobotProgramNodeEvaluateBoolean {
+	final RobotProgramNodeEvaluateBoolean RELOP;
+	final RobotProgramNodeEvaluateInt SEN;
+	final int NUM;
 
-	public CondNode(String relop, RobotProgramNode sensor, RobotProgramNode num) {
+	public CondNode(RobotProgramNodeEvaluateBoolean relop, RobotProgramNodeEvaluateInt sensor, int num) {
 		RELOP = relop;
 		SEN = sensor;
 		NUM = num;
 	}
 
 	@Override
-	public void execute(Robot robot) {
+	public boolean evaluate(Robot robot) {
 
-		if (RELOP.equals("<")) {
-
-		}
+		return RELOP.evaluate(robot);
 	}
 
 	public String toString() {
 
-		return RELOP + "(" + SEN + ", " + NUM + ")";
+		return "(" + RELOP + "(" + SEN + ", " + NUM + "))";
 	}
+}
+
+class SenNode implements RobotProgramNodeEvaluateInt {
+	final RobotProgramNodeEvaluateInt SEN;
+
+	public SenNode(RobotProgramNodeEvaluateInt sensor) {
+		SEN = sensor;
+	}
+
+	@Override
+	public int evaluate(Robot robot) {
+
+		return SEN.evaluate(robot);
+	}
+
+	public String toString() {
+
+		return "" + SEN;
+	}
+
 }

@@ -82,13 +82,17 @@ public class Parser {
 	static Pattern CLOSEPAREN = Pattern.compile("\\)");
 	static Pattern OPENBRACE = Pattern.compile("\\{");
 	static Pattern CLOSEBRACE = Pattern.compile("\\}");
+	static Pattern COMMAPATTERN = Pattern.compile(",");
 
 	// Non-terminal patterns
-	static final Pattern ACTPATTERN = Pattern.compile("move|turnL|turnR|takeFuel|wait");
+	static final Pattern ACTPATTERN = Pattern.compile("move|turnL|turnR|takeFuel|wait|turnAround|shieldOn|shieldOff");
+	static final Pattern STMTPATTERN = Pattern
+			.compile("move|turnL|turnR|takeFuel|wait|while|if|loop|turnAround|shieldOn|shieldOff");
 	static final Pattern LOOPPATTERN = Pattern.compile("loop");
 	static final Pattern IFPATTERN = Pattern.compile("if");
 	static final Pattern WHILEPATTERN = Pattern.compile("while");
-	static final Pattern CONDPATTERN = Pattern.compile("lt|gt|eq");
+	static final Pattern RELOPPATTERN = Pattern.compile("lt|gt|eq");
+	static final Pattern SENPATTERN = Pattern.compile("fuelLeft|oppLR|oppFB|numBarrels|barrelLR|barrelFB|wallDist");
 
 	// Compare patterns
 	static final Pattern GTPATTERN = Pattern.compile("gt");
@@ -100,8 +104,19 @@ public class Parser {
 	static final Pattern TURNLPATTERN = Pattern.compile("turnL");
 	static final Pattern TURNRPATTERN = Pattern.compile("turnR");
 	static final Pattern MOVEPATTERN = Pattern.compile("move");
-	static final Pattern WAITPATTERN = Pattern.compile("wait");
+	static final Pattern TURNAROUNDPATTERN = Pattern.compile("turnAround");
+	static final Pattern SHIELONPATTERN = Pattern.compile("shieldOn");
+	static final Pattern SHIELOFFPATTERN = Pattern.compile("shieldOff");
 	static final Pattern TAKEFUELPATTERN = Pattern.compile("takeFuel");
+	static final Pattern WAITPATTERN = Pattern.compile("wait");
+
+	static final Pattern FUELLEFTPATTERN = Pattern.compile("fuelLeft");
+	static final Pattern OPPLRPATTERN = Pattern.compile("oppLR");
+	static final Pattern OPPFBPATTERN = Pattern.compile("oppFB");
+	static final Pattern NUMBARRELSPATTERN = Pattern.compile("numBarrels");
+	static final Pattern BARRELLRPATTERN = Pattern.compile("barrelLR");
+	static final Pattern BARRELFBPATTERN = Pattern.compile("barrelFB");
+	static final Pattern WALLDISTPATTERN = Pattern.compile("wallDist");
 
 	/**
 	 * PROG ::= STMT+
@@ -165,10 +180,20 @@ public class Parser {
 			child = new ActNode(new TurnRNode());
 
 		} else if (checkFor(TAKEFUELPATTERN, s)) {
-			child = new ActNode(new TakeFuleNode());
+			child = new ActNode(new TakeFuelNode());
 
 		} else if (checkFor(WAITPATTERN, s)) {
 			child = new ActNode(new WaitNode());
+
+		} else if (checkFor(TURNAROUNDPATTERN, s)) {
+			child = new ActNode(new TurnArroundNode());
+
+		} else if (checkFor(SHIELONPATTERN, s)) {
+			child = new ActNode(new ShieldOnNode());
+
+		} else if (checkFor(SHIELOFFPATTERN, s)) {
+			child = new ActNode(new ShieldOffNode());
+
 		} else {
 			fail("Invalid action", s);
 		}
@@ -189,11 +214,12 @@ public class Parser {
 		ArrayList<RobotProgramNode> n = new ArrayList<>();
 
 		require(OPENBRACE, "Missing open brace", s);
-		if (!s.hasNext(ACTPATTERN)) {
+
+		if (!s.hasNext(STMTPATTERN)) {
 			fail("Empty loop", s);
 		}
 
-		while (s.hasNext(ACTPATTERN)) {
+		while (s.hasNext(STMTPATTERN)) {
 			n.add(parseStatement(s));
 		}
 
@@ -204,39 +230,86 @@ public class Parser {
 
 	static RobotProgramNode parseIf(Scanner s) {
 
-		RobotProgramNode child = null;
+		RobotProgramNodeEvaluateBoolean child = null;
 
 		require(OPENPAREN, "Missing open paren", s);
 
-		if (!s.hasNext(CONDPATTERN)) {
-			fail("Empty loop", s);
-		}
+		child = parseCond(s);
 
-		while (s.hasNext(ACTPATTERN)) {
-			n.add(parseStatement(s));
-		}
+		require(CLOSEPAREN, "Missing close peren", s);
 
-		require(CLOSEBRACE, "Missing close brace", s);
-
-		return new BlockNode(n);
+		return new IfNode(child, parseBlock(s));
 	}
 
 	static RobotProgramNode parseWhile(Scanner s) {
 
-		RobotProgramNode child = null;
+		RobotProgramNodeEvaluateBoolean child = null;
 
 		require(OPENPAREN, "Missing open paren", s);
-		if (!s.hasNext(ACTPATTERN)) {
-			fail("Empty loop", s);
+
+		child = parseCond(s);
+
+		require(CLOSEPAREN, "Missing close peren", s);
+
+		return new WhileNode(child, parseBlock(s));
+	}
+
+	static RobotProgramNodeEvaluateBoolean parseCond(Scanner s) {
+
+		RobotProgramNodeEvaluateBoolean relop = null;
+		RobotProgramNodeEvaluateInt sen = null;
+		int num = 0;
+
+		if (checkFor(LTPATTERN, s)) {
+			relop = new LessThanNode();
+		} else if (checkFor(GTPATTERN, s)) {
+			relop = new GreaterThanNode();
+		} else if (checkFor(EQPATTERN, s)) {
+			relop = new EqualNode();
+		} else {
+			fail("Invalid condition", s);
 		}
 
-		while (s.hasNext(ACTPATTERN)) {
-			n.add(parseStatement(s));
+		require(OPENPAREN, "Missing open paren", s);
+
+		sen = parseSen(s);
+
+		require(COMMAPATTERN, "Missing comma", s);
+
+		if (!s.hasNext(NUMPAT)) {
+			fail("Missing Num", s);
 		}
 
-		require(CLOSEBRACE, "Missing close brace", s);
+		num = (s.nextInt());
 
-		return new BlockNode(n);
+		require(CLOSEPAREN, "Missing close brace", s);
+
+		return new CondNode(relop, sen, num);
+	}
+
+	static SenNode parseSen(Scanner s) {
+
+		RobotProgramNodeEvaluateInt child = null;
+
+		if (checkFor(FUELLEFTPATTERN, s)) {
+			child = new FuelLeftNode();
+		} else if (checkFor(OPPLRPATTERN, s)) {
+			child = new OppLRNode();
+		} else if (checkFor(OPPFBPATTERN, s)) {
+			child = new OppFBNode();
+		} else if (checkFor(NUMBARRELSPATTERN, s)) {
+			child = new NumBarrelsNode();
+		} else if (checkFor(BARRELLRPATTERN, s)) {
+			child = new BarrelLRNode();
+		} else if (checkFor(BARRELFBPATTERN, s)) {
+			child = new BarrelFBNode();
+		} else if (checkFor(WALLDISTPATTERN, s)) {
+			child = new WallDistNode();
+		} else {
+			fail("Invalid sensor", s);
+		}
+
+		return new SenNode(child);
 	}
 
 	// utility methods for the parser
