@@ -159,7 +159,7 @@ public class Parser {
 			fail("Invalid Statement", s);
 		}
 
-		return child;
+		return new StmtNode(child);
 	}
 
 	static RobotProgramNode parseAction(Scanner s) {
@@ -171,28 +171,28 @@ public class Parser {
 		RobotProgramNode child = null;
 
 		if (checkFor(MOVEPATTERN, s)) {
-			child = new ActNode(new MoveNode());
+			child = new MoveNode();
 
 		} else if (checkFor(TURNLPATTERN, s)) {
-			child = new ActNode(new TurnLNode());
+			child = new TurnLNode();
 
 		} else if (checkFor(TURNRPATTERN, s)) {
-			child = new ActNode(new TurnRNode());
+			child = new TurnRNode();
 
 		} else if (checkFor(TAKEFUELPATTERN, s)) {
-			child = new ActNode(new TakeFuelNode());
+			child = new TakeFuelNode();
 
 		} else if (checkFor(WAITPATTERN, s)) {
-			child = new ActNode(new WaitNode());
+			child = new WaitNode();
 
 		} else if (checkFor(TURNAROUNDPATTERN, s)) {
-			child = new ActNode(new TurnArroundNode());
+			child = new TurnArroundNode();
 
 		} else if (checkFor(SHIELONPATTERN, s)) {
-			child = new ActNode(new ShieldOnNode());
+			child = new ShieldOnNode();
 
 		} else if (checkFor(SHIELOFFPATTERN, s)) {
-			child = new ActNode(new ShieldOffNode());
+			child = new ShieldOffNode();
 
 		} else {
 			fail("Invalid action", s);
@@ -200,7 +200,7 @@ public class Parser {
 
 		require(SEMICOLONPATTERN, "Missing semicolon", s);
 
-		return child;
+		return new ActNode(child);
 	}
 
 	static RobotProgramNode parseLoop(Scanner s) {
@@ -258,33 +258,61 @@ public class Parser {
 
 		RobotProgramNodeEvaluateBoolean relop = null;
 		RobotProgramNodeEvaluateInt sen = null;
-		int num = 0;
+		RobotProgramNodeEvaluateInt num = null;
 
 		if (checkFor(LTPATTERN, s)) {
-			relop = new LessThanNode();
+			require(OPENPAREN, "Missing open paren", s);
+
+			sen = parseSen(s);
+
+			require(COMMAPATTERN, "Missing comma", s);
+
+			if (!s.hasNext(NUMPAT)) {
+				fail("Missing Num", s);
+			}
+
+			num = parseNum(s);
+
+			relop = new LessThanNode(sen, num);
+
 		} else if (checkFor(GTPATTERN, s)) {
-			relop = new GreaterThanNode();
+
+			require(OPENPAREN, "Missing open paren", s);
+
+			sen = parseSen(s);
+
+			require(COMMAPATTERN, "Missing comma", s);
+
+			if (!s.hasNext(NUMPAT)) {
+				fail("Missing Num", s);
+			}
+
+			num = parseNum(s);
+
+			relop = new GreaterThanNode(sen, num);
 		} else if (checkFor(EQPATTERN, s)) {
-			relop = new EqualNode();
+
+			require(OPENPAREN, "Missing open paren", s);
+
+			sen = parseSen(s);
+
+			require(COMMAPATTERN, "Missing comma", s);
+
+			if (!s.hasNext(NUMPAT)) {
+				fail("Missing Num", s);
+			}
+
+			num = parseNum(s);
+
+			relop = new EqualNode(sen, num);
 		} else {
 			fail("Invalid condition", s);
+
 		}
-
-		require(OPENPAREN, "Missing open paren", s);
-
-		sen = parseSen(s);
-
-		require(COMMAPATTERN, "Missing comma", s);
-
-		if (!s.hasNext(NUMPAT)) {
-			fail("Missing Num", s);
-		}
-
-		num = (s.nextInt());
 
 		require(CLOSEPAREN, "Missing close brace", s);
 
-		return new CondNode(relop, sen, num);
+		return new CondNode(relop);
 	}
 
 	static SenNode parseSen(Scanner s) {
@@ -310,6 +338,10 @@ public class Parser {
 		}
 
 		return new SenNode(child);
+	}
+
+	static NumNode parseNum(Scanner s) {
+		return new NumNode(s.nextInt());
 	}
 
 	// utility methods for the parser

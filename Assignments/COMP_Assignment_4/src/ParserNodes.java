@@ -12,7 +12,6 @@ class ProgNode implements RobotProgramNode {
 		for (RobotProgramNode rpn : STMT) {
 			rpn.execute(robot);
 		}
-
 	}
 
 	public String toString() {
@@ -135,7 +134,7 @@ class IfNode implements RobotProgramNode {
 
 	public String toString() {
 
-		return "if" + BLOCK;
+		return "if" + COND + BLOCK;
 	}
 }
 
@@ -151,6 +150,7 @@ class WhileNode implements RobotProgramNode {
 
 	@Override
 	public void execute(Robot robot) {
+		System.out.println("gets");
 		while (COND.evaluate(robot) == true) {
 			BLOCK.execute(robot);
 		}
@@ -158,30 +158,27 @@ class WhileNode implements RobotProgramNode {
 
 	public String toString() {
 
-		return "while" + BLOCK;
+		return "while" + COND + BLOCK;
 	}
 }
 
 class CondNode implements RobotProgramNodeEvaluateBoolean {
 	final RobotProgramNodeEvaluateBoolean RELOP;
-	final RobotProgramNodeEvaluateInt SEN;
-	final int NUM;
 
-	public CondNode(RobotProgramNodeEvaluateBoolean relop, RobotProgramNodeEvaluateInt sensor, int num) {
+	public CondNode(RobotProgramNodeEvaluateBoolean relop) {
 		RELOP = relop;
-		SEN = sensor;
-		NUM = num;
 	}
 
 	@Override
 	public boolean evaluate(Robot robot) {
 
 		return RELOP.evaluate(robot);
+
 	}
 
 	public String toString() {
 
-		return "(" + RELOP + "(" + SEN + ", " + NUM + "))";
+		return "(" + RELOP + ")";
 	}
 }
 
@@ -200,7 +197,26 @@ class SenNode implements RobotProgramNodeEvaluateInt {
 
 	public String toString() {
 
-		return "" + SEN;
+		return "(" + SEN;
+	}
+
+}
+
+class NumNode implements RobotProgramNodeEvaluateInt {
+	final int VALUE;
+
+	public NumNode(int v) {
+		this.VALUE = v;
+	}
+
+	@Override
+	public int evaluate(Robot robot) {
+		return VALUE;
+	}
+
+	public String toString() {
+
+		return VALUE + ")";
 	}
 
 }

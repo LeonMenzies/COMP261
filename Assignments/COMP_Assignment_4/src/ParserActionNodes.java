@@ -81,15 +81,21 @@ class TakeFuelNode implements RobotProgramNode {
 
 class LessThanNode implements RobotProgramNodeEvaluateBoolean {
 
+	RobotProgramNodeEvaluateInt left;
+	RobotProgramNodeEvaluateInt right;
+
+	public LessThanNode(RobotProgramNodeEvaluateInt l, RobotProgramNodeEvaluateInt r) {
+		this.left = l;
+		this.right = r;
+	}
+
 	@Override
 	public boolean evaluate(Robot robot) {
-//		if (rpne.evaluate(robot) < val) {
-//			return true;
-//		} else {
-//			return false;
-//		}
-		return true;
-
+		if (left.evaluate(robot) < right.evaluate(robot)) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	public String toString() {
@@ -99,16 +105,21 @@ class LessThanNode implements RobotProgramNodeEvaluateBoolean {
 
 class GreaterThanNode implements RobotProgramNodeEvaluateBoolean {
 
+	RobotProgramNodeEvaluateInt left;
+	RobotProgramNodeEvaluateInt right;
+
+	public GreaterThanNode(RobotProgramNodeEvaluateInt l, RobotProgramNodeEvaluateInt r) {
+		this.left = l;
+		this.right = r;
+	}
+
 	@Override
 	public boolean evaluate(Robot robot) {
-
-//		if (rpne.evaluate(robot) > val) {
-//			return true;
-//		} else {
-//			return false;
-//		}
-
-		return true;
+		if (left.evaluate(robot) > right.evaluate(robot)) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	public String toString() {
@@ -118,15 +129,25 @@ class GreaterThanNode implements RobotProgramNodeEvaluateBoolean {
 
 class EqualNode implements RobotProgramNodeEvaluateBoolean {
 
+	RobotProgramNodeEvaluateInt left;
+	RobotProgramNodeEvaluateInt right;
+
+	public EqualNode(RobotProgramNodeEvaluateInt l, RobotProgramNodeEvaluateInt r) {
+		this.left = l;
+		this.right = r;
+	}
+
 	@Override
 	public boolean evaluate(Robot robot) {
-//		if (rpne.evaluate(robot) == val) {
-//			return true;
-//		} else {
-//			return false;
-//		}
+		if (left.evaluate(robot) == right.evaluate(robot)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 
-		return true;
+	public String toString() {
+		return "eq";
 	}
 }
 
