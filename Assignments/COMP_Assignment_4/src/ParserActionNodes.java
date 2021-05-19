@@ -99,7 +99,7 @@ class LessThanNode implements RobotProgramNodeEvaluateBoolean {
 	}
 
 	public String toString() {
-		return "lt";
+		return "lt(" + left + ", " + right + ")";
 	}
 }
 
@@ -123,7 +123,7 @@ class GreaterThanNode implements RobotProgramNodeEvaluateBoolean {
 	}
 
 	public String toString() {
-		return "gt";
+		return "gt(" + left + ", " + right + ")";
 	}
 }
 
@@ -147,7 +147,7 @@ class EqualNode implements RobotProgramNodeEvaluateBoolean {
 	}
 
 	public String toString() {
-		return "eq";
+		return "eq(" + left + ", " + right + ")";
 	}
 }
 

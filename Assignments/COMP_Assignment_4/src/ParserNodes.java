@@ -104,12 +104,13 @@ class BlockNode implements RobotProgramNode {
 		sb.append("{\n");
 
 		for (RobotProgramNode r : STMT) {
-			sb.append("   ");
+
 			sb.append(r);
 			sb.append("\n");
 		}
 
-		sb.append("}\n");
+		sb.append("}");
+
 		return sb.toString();
 
 	}
