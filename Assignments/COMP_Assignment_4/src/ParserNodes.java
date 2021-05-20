@@ -117,11 +117,13 @@ class BlockNode implements RobotProgramNode {
 }
 
 class IfNode implements RobotProgramNode {
-	final RobotProgramNode BLOCK;
+	final RobotProgramNode BLOCK1;
+	final RobotProgramNode BLOCK2;
 	final RobotProgramNodeEvaluateBoolean COND;
 
-	public IfNode(RobotProgramNodeEvaluateBoolean cond, RobotProgramNode block) {
-		BLOCK = block;
+	public IfNode(RobotProgramNodeEvaluateBoolean cond, RobotProgramNode ifBlock, RobotProgramNode elseIfBlock) {
+		BLOCK1 = ifBlock;
+		BLOCK2 = elseIfBlock;
 		COND = cond;
 
 	}
@@ -129,13 +131,21 @@ class IfNode implements RobotProgramNode {
 	@Override
 	public void execute(Robot robot) {
 		if (COND.evaluate(robot) == true) {
-			BLOCK.execute(robot);
+			BLOCK1.execute(robot);
+		} else {
+			BLOCK2.execute(robot);
 		}
 	}
 
 	public String toString() {
 
-		return "if" + COND + BLOCK;
+		if (BLOCK2 == null) {
+			return "if(" + COND + ")" + BLOCK1;
+
+		} else {
+			return "if(" + COND + ")" + BLOCK1 + "else" + BLOCK2;
+		}
+
 	}
 }
 
@@ -159,7 +169,7 @@ class WhileNode implements RobotProgramNode {
 
 	public String toString() {
 
-		return "while" + COND + BLOCK;
+		return "while(" + COND + ")" + BLOCK;
 	}
 }
 
@@ -218,6 +228,63 @@ class NumNode implements RobotProgramNodeEvaluateInt {
 	public String toString() {
 
 		return VALUE + ")";
+	}
+
+}
+
+class ExpNode implements RobotProgramNodeEvaluateInt {
+	final RobotProgramNodeEvaluateInt VALUE;
+
+	public ExpNode(RobotProgramNodeEvaluateInt v) {
+		this.VALUE = v;
+	}
+
+	@Override
+	public int evaluate(Robot robot) {
+		return VALUE.evaluate(robot);
+	}
+
+	public String toString() {
+
+		return VALUE + "";
+	}
+
+}
+
+class OpNode implements RobotProgramNodeEvaluateInt {
+	final RobotProgramNodeEvaluateInt VALUE;
+
+	public OpNode(RobotProgramNodeEvaluateInt v) {
+		this.VALUE = v;
+	}
+
+	@Override
+	public int evaluate(Robot robot) {
+		return VALUE.evaluate(robot);
+	}
+
+	public String toString() {
+
+		return VALUE + "";
+	}
+
+}
+
+class RelopNode implements RobotProgramNodeEvaluateBoolean {
+	final RobotProgramNodeEvaluateBoolean VALUE;
+
+	public RelopNode(RobotProgramNodeEvaluateBoolean v) {
+		this.VALUE = v;
+	}
+
+	@Override
+	public boolean evaluate(Robot robot) {
+		return VALUE.evaluate(robot);
+	}
+
+	public String toString() {
+
+		return VALUE + "";
 	}
 
 }

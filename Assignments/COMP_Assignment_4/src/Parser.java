@@ -77,7 +77,8 @@ public class Parser {
 	}
 
 	// Useful Patterns
-	static Pattern NUMPAT = Pattern.compile("-?\\d+"); // ("-?(0|[1-9][0-9]*)");
+	// static Pattern NUMPAT = Pattern.compile("-?\\d+");
+	static Pattern NUMPAT = Pattern.compile("-?(0|[1-9][0-9]*)");
 	static Pattern OPENPAREN = Pattern.compile("\\(");
 	static Pattern CLOSEPAREN = Pattern.compile("\\)");
 	static Pattern OPENBRACE = Pattern.compile("\\{");
@@ -90,14 +91,29 @@ public class Parser {
 			.compile("move|turnL|turnR|takeFuel|wait|while|if|loop|turnAround|shieldOn|shieldOff");
 	static final Pattern LOOPPATTERN = Pattern.compile("loop");
 	static final Pattern IFPATTERN = Pattern.compile("if");
+	static final Pattern ELSEPATTERN = Pattern.compile("else");
 	static final Pattern WHILEPATTERN = Pattern.compile("while");
 	static final Pattern RELOPPATTERN = Pattern.compile("lt|gt|eq");
 	static final Pattern SENPATTERN = Pattern.compile("fuelLeft|oppLR|oppFB|numBarrels|barrelLR|barrelFB|wallDist");
+	static final Pattern OPERATIONPATTERN = Pattern.compile("add|sub|mul|div");
+	static final Pattern EXPRESSIONPATTERN = Pattern
+			.compile("add|sub|mul|div|-?(0|[1-9][0-9]*)|fuelLeft|oppLR|oppFB|numBarrels|barrelLR|barrelFB|wallDist");
 
 	// Compare patterns
 	static final Pattern GTPATTERN = Pattern.compile("gt");
 	static final Pattern LTPATTERN = Pattern.compile("lt");
 	static final Pattern EQPATTERN = Pattern.compile("eq");
+
+	// Operation patterns
+	static final Pattern ADDPATTERN = Pattern.compile("add");
+	static final Pattern SUBPATTERN = Pattern.compile("sub");
+	static final Pattern MULPATTERN = Pattern.compile("mul");
+	static final Pattern DIVPATTERN = Pattern.compile("div");
+
+	// Condition patterns
+	static final Pattern ANDPATTERN = Pattern.compile("and");
+	static final Pattern ORPATTERN = Pattern.compile("or");
+	static final Pattern NOTPATTERN = Pattern.compile("not");
 
 	// action patterns
 	static final Pattern SEMICOLONPATTERN = Pattern.compile(";");
@@ -171,7 +187,18 @@ public class Parser {
 		RobotProgramNode child = null;
 
 		if (checkFor(MOVEPATTERN, s)) {
-			child = new MoveNode();
+
+			RobotProgramNodeEvaluateInt val = null;
+
+			if (s.hasNext(OPENPAREN)) {
+				s.next();
+
+				val = parseExpNode(s);
+
+				require(CLOSEPAREN, "Missing close peren", s);
+			}
+
+			child = new MoveNode(val);
 
 		} else if (checkFor(TURNLPATTERN, s)) {
 			child = new TurnLNode();
@@ -183,7 +210,18 @@ public class Parser {
 			child = new TakeFuelNode();
 
 		} else if (checkFor(WAITPATTERN, s)) {
-			child = new WaitNode();
+
+			RobotProgramNodeEvaluateInt val = null;
+
+			if (s.hasNext(OPENPAREN)) {
+				s.next();
+
+				val = parseExpNode(s);
+
+				require(CLOSEPAREN, "Missing close peren", s);
+			}
+
+			child = new WaitNode(val);
 
 		} else if (checkFor(TURNAROUNDPATTERN, s)) {
 			child = new TurnArroundNode();
@@ -198,7 +236,7 @@ public class Parser {
 			fail("Invalid action", s);
 		}
 
-		require(SEMICOLONPATTERN, "Missing semicolon", s);
+		require(SEMICOLONPATTERN, "Invalid action", s);
 
 		return new ActNode(child);
 	}
@@ -231,6 +269,8 @@ public class Parser {
 	static RobotProgramNode parseIf(Scanner s) {
 
 		RobotProgramNodeEvaluateBoolean child = null;
+		RobotProgramNode ifBlock = null;
+		RobotProgramNode elseIfBlock = null;
 
 		require(OPENPAREN, "Missing open paren", s);
 
@@ -238,7 +278,16 @@ public class Parser {
 
 		require(CLOSEPAREN, "Missing close peren", s);
 
-		return new IfNode(child, parseBlock(s));
+		ifBlock = parseBlock(s);
+
+		if (s.hasNext(ELSEPATTERN)) {
+			s.next();
+
+			elseIfBlock = parseBlock(s);
+
+		}
+
+		return new IfNode(child, ifBlock, elseIfBlock);
 	}
 
 	static RobotProgramNode parseWhile(Scanner s) {
@@ -256,6 +305,59 @@ public class Parser {
 
 	static RobotProgramNodeEvaluateBoolean parseCond(Scanner s) {
 
+		RobotProgramNodeEvaluateBoolean cond = null;
+		RobotProgramNodeEvaluateBoolean con1 = null;
+		RobotProgramNodeEvaluateBoolean con2 = null;
+
+		if (s.hasNext(RELOPPATTERN)) {
+			return parseRelop(s);
+		} else if (checkFor(ANDPATTERN, s)) {
+
+			require(OPENPAREN, "Missing open peren", s);
+
+			con1 = parseCond(s);
+
+			require(COMMAPATTERN, "Missing Comma", s);
+
+			con2 = parseCond(s);
+
+			require(CLOSEPAREN, "Missing open peren", s);
+
+			cond = new AndNode(con1, con2);
+
+		} else if (checkFor(ORPATTERN, s)) {
+
+			require(OPENPAREN, "Missing open peren", s);
+
+			con1 = parseCond(s);
+
+			require(COMMAPATTERN, "Missing Comma", s);
+
+			con2 = parseCond(s);
+
+			require(CLOSEPAREN, "Missing open peren", s);
+
+			cond = new OrNode(con1, con2);
+
+		} else if (checkFor(NOTPATTERN, s)) {
+
+			require(OPENPAREN, "Missing open peren", s);
+
+			con1 = parseCond(s);
+
+			require(CLOSEPAREN, "Missing open peren", s);
+
+			cond = new NotNode(con1);
+
+		} else {
+			fail("Invalid condition", s);
+		}
+
+		return new CondNode(cond);
+	}
+
+	static RobotProgramNodeEvaluateBoolean parseRelop(Scanner s) {
+
 		RobotProgramNodeEvaluateBoolean relop = null;
 		RobotProgramNodeEvaluateInt sen = null;
 		RobotProgramNodeEvaluateInt num = null;
@@ -263,15 +365,11 @@ public class Parser {
 		if (checkFor(LTPATTERN, s)) {
 			require(OPENPAREN, "Missing open paren", s);
 
-			sen = parseSen(s);
+			sen = parseExpNode(s);
 
 			require(COMMAPATTERN, "Missing comma", s);
 
-			if (!s.hasNext(NUMPAT)) {
-				fail("Missing Num", s);
-			}
-
-			num = parseNum(s);
+			num = parseExpNode(s);
 
 			relop = new LessThanNode(sen, num);
 
@@ -279,30 +377,22 @@ public class Parser {
 
 			require(OPENPAREN, "Missing open paren", s);
 
-			sen = parseSen(s);
+			sen = parseExpNode(s);
 
 			require(COMMAPATTERN, "Missing comma", s);
 
-			if (!s.hasNext(NUMPAT)) {
-				fail("Missing Num", s);
-			}
-
-			num = parseNum(s);
+			num = parseExpNode(s);
 
 			relop = new GreaterThanNode(sen, num);
 		} else if (checkFor(EQPATTERN, s)) {
 
 			require(OPENPAREN, "Missing open paren", s);
 
-			sen = parseSen(s);
+			sen = parseExpNode(s);
 
 			require(COMMAPATTERN, "Missing comma", s);
 
-			if (!s.hasNext(NUMPAT)) {
-				fail("Missing Num", s);
-			}
-
-			num = parseNum(s);
+			num = parseExpNode(s);
 
 			relop = new EqualNode(sen, num);
 		} else {
@@ -312,7 +402,7 @@ public class Parser {
 
 		require(CLOSEPAREN, "Missing close brace", s);
 
-		return new CondNode(relop);
+		return new RelopNode(relop);
 	}
 
 	static SenNode parseSen(Scanner s) {
@@ -342,6 +432,78 @@ public class Parser {
 
 	static NumNode parseNum(Scanner s) {
 		return new NumNode(s.nextInt());
+	}
+
+	static RobotProgramNodeEvaluateInt parseExpNode(Scanner s) {
+
+		RobotProgramNodeEvaluateInt child = null;
+
+		if (s.hasNext(NUMPAT)) {
+			child = parseNum(s);
+		} else if (s.hasNext(SENPATTERN)) {
+			child = parseSen(s);
+		} else if (s.hasNext(OPERATIONPATTERN)) {
+
+			child = parseOp(s);
+		} else {
+			fail("Invalid expression", s);
+		}
+
+		return new ExpNode(child);
+	}
+
+	static RobotProgramNodeEvaluateInt parseOp(Scanner s) {
+
+		RobotProgramNodeEvaluateInt child = null;
+
+		if (checkFor(ADDPATTERN, s)) {
+
+			require(OPENPAREN, "Missing open paren", s);
+
+			RobotProgramNodeEvaluateInt val1 = parseExpNode(s);
+			require(COMMAPATTERN, "Missing comma", s);
+
+			RobotProgramNodeEvaluateInt val2 = parseExpNode(s);
+			require(CLOSEPAREN, "Missing close paren", s);
+
+			child = new AddNode(val1, val2);
+		} else if (checkFor(SUBPATTERN, s)) {
+
+			require(OPENPAREN, "Missing open paren", s);
+
+			RobotProgramNodeEvaluateInt val1 = parseExpNode(s);
+			require(COMMAPATTERN, "Missing comma", s);
+
+			RobotProgramNodeEvaluateInt val2 = parseExpNode(s);
+			require(CLOSEPAREN, "Missing close paren", s);
+
+			child = new SubNode(val1, val2);
+		} else if (checkFor(MULPATTERN, s)) {
+
+			require(OPENPAREN, "Missing open paren", s);
+			RobotProgramNodeEvaluateInt val1 = parseExpNode(s);
+			require(COMMAPATTERN, "Missing comma", s);
+
+			RobotProgramNodeEvaluateInt val2 = parseExpNode(s);
+			require(CLOSEPAREN, "Missing close paren", s);
+
+			child = new MulNode(val1, val2);
+		} else if (checkFor(DIVPATTERN, s)) {
+
+			require(OPENPAREN, "Missing open paren", s);
+
+			RobotProgramNodeEvaluateInt val1 = parseExpNode(s);
+			require(COMMAPATTERN, "Missing comma", s);
+
+			RobotProgramNodeEvaluateInt val2 = parseExpNode(s);
+			require(CLOSEPAREN, "Missing close paren", s);
+
+			child = new DivNode(val1, val2);
+		} else {
+			fail("Incorrect opperation", s);
+		}
+
+		return new OpNode(child);
 	}
 
 	// utility methods for the parser

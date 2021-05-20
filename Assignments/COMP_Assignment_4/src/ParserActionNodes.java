@@ -22,9 +22,19 @@ class TurnRNode implements RobotProgramNode {
 }
 
 class MoveNode implements RobotProgramNode {
+	RobotProgramNodeEvaluateInt value;
+
+	MoveNode(RobotProgramNodeEvaluateInt i) {
+		value = i;
+	}
+
 	@Override
 	public void execute(Robot robot) {
-		robot.move();
+
+		for (int i = 0; i < value.evaluate(robot); i++) {
+			robot.move();
+		}
+
 	}
 
 	public String toString() {
@@ -33,9 +43,18 @@ class MoveNode implements RobotProgramNode {
 }
 
 class WaitNode implements RobotProgramNode {
+
+	RobotProgramNodeEvaluateInt value;
+
+	WaitNode(RobotProgramNodeEvaluateInt i) {
+		value = i;
+	}
+
 	@Override
 	public void execute(Robot robot) {
-		robot.idleWait();
+		for (int i = 0; i < value.evaluate(robot); i++) {
+			robot.idleWait();
+		}
 	}
 
 	public String toString() {
@@ -245,5 +264,156 @@ class TurnArroundNode implements RobotProgramNode {
 
 	public String toString() {
 		return "turnAround;";
+	}
+}
+
+class AddNode implements RobotProgramNodeEvaluateInt {
+
+	RobotProgramNodeEvaluateInt val1;
+	RobotProgramNodeEvaluateInt val2;
+
+	public AddNode(RobotProgramNodeEvaluateInt v1, RobotProgramNodeEvaluateInt v2) {
+		val1 = v1;
+		val2 = v2;
+	}
+
+	@Override
+	public int evaluate(Robot robot) {
+
+		return val1.evaluate(robot) + val2.evaluate(robot);
+	}
+
+	public String toString() {
+		return val1 + "+" + val2;
+	}
+}
+
+class SubNode implements RobotProgramNodeEvaluateInt {
+
+	RobotProgramNodeEvaluateInt val1;
+	RobotProgramNodeEvaluateInt val2;
+
+	public SubNode(RobotProgramNodeEvaluateInt v1, RobotProgramNodeEvaluateInt v2) {
+		val1 = v1;
+		val2 = v2;
+	}
+
+	@Override
+	public int evaluate(Robot robot) {
+
+		return val1.evaluate(robot) - val2.evaluate(robot);
+	}
+
+	public String toString() {
+		return val1 + "-" + val2;
+	}
+}
+
+class MulNode implements RobotProgramNodeEvaluateInt {
+
+	RobotProgramNodeEvaluateInt val1;
+	RobotProgramNodeEvaluateInt val2;
+
+	public MulNode(RobotProgramNodeEvaluateInt v1, RobotProgramNodeEvaluateInt v2) {
+		val1 = v1;
+		val2 = v2;
+	}
+
+	@Override
+	public int evaluate(Robot robot) {
+
+		return val1.evaluate(robot) * val2.evaluate(robot);
+	}
+
+	public String toString() {
+		return val1 + "*" + val2;
+	}
+}
+
+class DivNode implements RobotProgramNodeEvaluateInt {
+
+	RobotProgramNodeEvaluateInt val1;
+	RobotProgramNodeEvaluateInt val2;
+
+	public DivNode(RobotProgramNodeEvaluateInt v1, RobotProgramNodeEvaluateInt v2) {
+		val1 = v1;
+		val2 = v2;
+	}
+
+	@Override
+	public int evaluate(Robot robot) {
+
+		return val1.evaluate(robot) / val2.evaluate(robot);
+	}
+
+	public String toString() {
+		return val1 + "/" + val2;
+	}
+}
+
+class AndNode implements RobotProgramNodeEvaluateBoolean {
+
+	RobotProgramNodeEvaluateBoolean con1;
+	RobotProgramNodeEvaluateBoolean con2;
+
+	public AndNode(RobotProgramNodeEvaluateBoolean c1, RobotProgramNodeEvaluateBoolean c2) {
+		con1 = c1;
+		con2 = c2;
+	}
+
+	@Override
+	public boolean evaluate(Robot robot) {
+		if (con1.evaluate(robot) && con2.evaluate(robot)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public String toString() {
+		return "and(" + con1 + "," + con2 + ")";
+	}
+
+}
+
+class OrNode implements RobotProgramNodeEvaluateBoolean {
+
+	RobotProgramNodeEvaluateBoolean con1;
+	RobotProgramNodeEvaluateBoolean con2;
+
+	public OrNode(RobotProgramNodeEvaluateBoolean c1, RobotProgramNodeEvaluateBoolean c2) {
+		con1 = c1;
+		con2 = c2;
+	}
+
+	@Override
+	public boolean evaluate(Robot robot) {
+		if (con1.evaluate(robot) || con2.evaluate(robot)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public String toString() {
+		return "or(" + con1 + "," + con2 + ")";
+	}
+}
+
+class NotNode implements RobotProgramNodeEvaluateBoolean {
+
+	RobotProgramNodeEvaluateBoolean con1;
+
+	public NotNode(RobotProgramNodeEvaluateBoolean c1) {
+		con1 = c1;
+	}
+
+	@Override
+	public boolean evaluate(Robot robot) {
+		return !con1.evaluate(robot);
+	}
+
+	public String toString() {
+		return "not(" + con1 + ")";
 	}
 }
