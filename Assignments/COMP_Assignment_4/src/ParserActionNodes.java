@@ -30,15 +30,25 @@ class MoveNode implements RobotProgramNode {
 
 	@Override
 	public void execute(Robot robot) {
-
-		for (int i = 0; i < value.evaluate(robot); i++) {
+		if (value == null) {
 			robot.move();
+		} else {
+
+			for (int i = 0; i < value.evaluate(robot); i++) {
+				robot.move();
+			}
 		}
 
 	}
 
 	public String toString() {
-		return "move;";
+
+		if (value == null) {
+			return "move;";
+		} else {
+			return "move(" + value + ");";
+		}
+
 	}
 }
 
@@ -52,13 +62,23 @@ class WaitNode implements RobotProgramNode {
 
 	@Override
 	public void execute(Robot robot) {
-		for (int i = 0; i < value.evaluate(robot); i++) {
-			robot.idleWait();
+		if (value == null) {
+			robot.move();
+		} else {
+
+			for (int i = 0; i < value.evaluate(robot); i++) {
+				robot.idleWait();
+			}
 		}
 	}
 
 	public String toString() {
-		return "wait;";
+		if (value == null) {
+			return "wait;";
+		} else {
+			return "wait(" + value + ");";
+		}
+
 	}
 }
 
@@ -220,8 +240,18 @@ class NumBarrelsNode implements RobotProgramNodeEvaluateInt {
 
 class BarrelLRNode implements RobotProgramNodeEvaluateInt {
 
+	RobotProgramNodeEvaluateInt val;
+
+	public BarrelLRNode(RobotProgramNodeEvaluateInt v) {
+		val = v;
+	}
+
 	@Override
 	public int evaluate(Robot robot) {
+
+		if (val != null) {
+			robot.getBarrelLR(val.evaluate(robot));
+		}
 		return robot.getClosestBarrelLR();
 	}
 
@@ -232,8 +262,18 @@ class BarrelLRNode implements RobotProgramNodeEvaluateInt {
 
 class BarrelFBNode implements RobotProgramNodeEvaluateInt {
 
+	RobotProgramNodeEvaluateInt val;
+
+	public BarrelFBNode(RobotProgramNodeEvaluateInt v) {
+		val = v;
+	}
+
 	@Override
 	public int evaluate(Robot robot) {
+
+		if (val != null) {
+			robot.getBarrelFB(val.evaluate(robot));
+		}
 		return robot.getClosestBarrelFB();
 	}
 
@@ -284,7 +324,7 @@ class AddNode implements RobotProgramNodeEvaluateInt {
 	}
 
 	public String toString() {
-		return val1 + "+" + val2;
+		return "add(" + val1 + "+" + val2 + ")";
 	}
 }
 
@@ -305,7 +345,7 @@ class SubNode implements RobotProgramNodeEvaluateInt {
 	}
 
 	public String toString() {
-		return val1 + "-" + val2;
+		return "sub(" + val1 + "-" + val2 + ")";
 	}
 }
 
@@ -326,7 +366,7 @@ class MulNode implements RobotProgramNodeEvaluateInt {
 	}
 
 	public String toString() {
-		return val1 + "*" + val2;
+		return "mul(" + val1 + "*" + val2 + ")";
 	}
 }
 
@@ -347,7 +387,7 @@ class DivNode implements RobotProgramNodeEvaluateInt {
 	}
 
 	public String toString() {
-		return val1 + "/" + val2;
+		return "div(" + val1 + "/" + val2 + ")";
 	}
 }
 

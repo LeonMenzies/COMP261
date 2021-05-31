@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.List;
 
 class ProgNode implements RobotProgramNode {
 	final ArrayList<RobotProgramNode> STMT;
@@ -117,13 +118,24 @@ class BlockNode implements RobotProgramNode {
 }
 
 class IfNode implements RobotProgramNode {
-	final RobotProgramNode BLOCK1;
-	final RobotProgramNode BLOCK2;
+	public RobotProgramNode getIFBLOCK() {
+		return IFBLOCK;
+	}
+
+	public RobotProgramNodeEvaluateBoolean getCOND() {
+		return COND;
+	}
+
+	final RobotProgramNode IFBLOCK;
+	final List<IfNode> ELSEIFBLOCK;
+	final RobotProgramNode ELSEBLOCK;
 	final RobotProgramNodeEvaluateBoolean COND;
 
-	public IfNode(RobotProgramNodeEvaluateBoolean cond, RobotProgramNode ifBlock, RobotProgramNode elseIfBlock) {
-		BLOCK1 = ifBlock;
-		BLOCK2 = elseIfBlock;
+	public IfNode(RobotProgramNodeEvaluateBoolean cond, RobotProgramNode ifBlock, List<IfNode> elseIfBlock,
+			RobotProgramNode elseBlock) {
+		IFBLOCK = ifBlock;
+		ELSEIFBLOCK = elseIfBlock;
+		ELSEBLOCK = elseBlock;
 		COND = cond;
 
 	}
@@ -131,20 +143,37 @@ class IfNode implements RobotProgramNode {
 	@Override
 	public void execute(Robot robot) {
 		if (COND.evaluate(robot) == true) {
-			BLOCK1.execute(robot);
-		} else {
-			BLOCK2.execute(robot);
+			IFBLOCK.execute(robot);
+			return;
 		}
+
+		for (IfNode rpn : ELSEIFBLOCK) {
+			if (rpn.getCOND().evaluate(robot) == true) {
+				rpn.getIFBLOCK().execute(robot);
+				return;
+			}
+		}
+
+		ELSEBLOCK.execute(robot);
+
 	}
 
 	public String toString() {
 
-		if (BLOCK2 == null) {
-			return "if(" + COND + ")" + BLOCK1;
+		String toReturn = "if(" + COND + ")" + IFBLOCK;
 
-		} else {
-			return "if(" + COND + ")" + BLOCK1 + "else" + BLOCK2;
+		if (ELSEIFBLOCK != null) {
+
+			for (IfNode in : ELSEIFBLOCK) {
+				toReturn += "elif" + in;
+			}
 		}
+
+		if (ELSEBLOCK != null) {
+			toReturn += "else" + ELSEBLOCK;
+		}
+
+		return toReturn;
 
 	}
 }
@@ -189,7 +218,7 @@ class CondNode implements RobotProgramNodeEvaluateBoolean {
 
 	public String toString() {
 
-		return "(" + RELOP + ")";
+		return RELOP + "";
 	}
 }
 
@@ -208,7 +237,7 @@ class SenNode implements RobotProgramNodeEvaluateInt {
 
 	public String toString() {
 
-		return "(" + SEN;
+		return SEN + "";
 	}
 
 }
@@ -227,7 +256,7 @@ class NumNode implements RobotProgramNodeEvaluateInt {
 
 	public String toString() {
 
-		return VALUE + ")";
+		return VALUE + "";
 	}
 
 }
@@ -287,4 +316,44 @@ class RelopNode implements RobotProgramNodeEvaluateBoolean {
 		return VALUE + "";
 	}
 
+}
+
+class VarNode implements RobotProgramNodeEvaluateInt {
+	final String NAME;
+	final RobotProgramNodeEvaluateInt VALUE;
+
+	public VarNode(String name, RobotProgramNodeEvaluateInt val) {
+		NAME = name;
+		VALUE = val;
+	}
+
+	@Override
+	public int evaluate(Robot robot) {
+		return VALUE.evaluate(robot);
+	}
+
+	public String toString() {
+
+		return NAME + "=" + VALUE;
+	}
+}
+
+class AssignNode implements RobotProgramNode {
+
+	RobotProgramNodeEvaluateInt VAR;
+
+	public AssignNode(RobotProgramNodeEvaluateInt child) {
+		VAR = child;
+	}
+
+	@Override
+	public void execute(Robot robot) {
+		VAR.evaluate(robot);
+
+	}
+
+	public String toString() {
+
+		return "" + VAR;
+	}
 }

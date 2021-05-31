@@ -1,6 +1,9 @@
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
@@ -12,6 +15,9 @@ import javax.swing.JFileChooser;
  * parseProgram and all the rest of the parser.
  */
 public class Parser {
+
+	// Map for variables
+	static Map<String, RobotProgramNodeEvaluateInt> variables = new HashMap<>();
 
 	/**
 	 * Top level parse method, called by the World
@@ -78,19 +84,23 @@ public class Parser {
 
 	// Useful Patterns
 	// static Pattern NUMPAT = Pattern.compile("-?\\d+");
-	static Pattern NUMPAT = Pattern.compile("-?(0|[1-9][0-9]*)");
-	static Pattern OPENPAREN = Pattern.compile("\\(");
-	static Pattern CLOSEPAREN = Pattern.compile("\\)");
-	static Pattern OPENBRACE = Pattern.compile("\\{");
-	static Pattern CLOSEBRACE = Pattern.compile("\\}");
-	static Pattern COMMAPATTERN = Pattern.compile(",");
+	static final Pattern NUMPAT = Pattern.compile("-?(0|[1-9][0-9]*)");
+	static final Pattern VARPATTERN = Pattern.compile("\\$[A-Za-z][A-Za-z0-9]*");
+	static final Pattern OPENPAREN = Pattern.compile("\\(");
+	static final Pattern CLOSEPAREN = Pattern.compile("\\)");
+	static final Pattern OPENBRACE = Pattern.compile("\\{");
+	static final Pattern CLOSEBRACE = Pattern.compile("\\}");
+	static final Pattern COMMAPATTERN = Pattern.compile(",");
+	static final Pattern DOASSIGNPATTERN = Pattern.compile("=");
+	static final Pattern SEMICOLONPATTERN = Pattern.compile(";");
 
 	// Non-terminal patterns
 	static final Pattern ACTPATTERN = Pattern.compile("move|turnL|turnR|takeFuel|wait|turnAround|shieldOn|shieldOff");
-	static final Pattern STMTPATTERN = Pattern
-			.compile("move|turnL|turnR|takeFuel|wait|while|if|loop|turnAround|shieldOn|shieldOff");
+	static final Pattern STMTPATTERN = Pattern.compile(
+			"move|turnL|turnR|takeFuel|wait|while|if|loop|turnAround|shieldOn|shieldOff|\\$[A-Za-z][A-Za-z0-9]*");
 	static final Pattern LOOPPATTERN = Pattern.compile("loop");
 	static final Pattern IFPATTERN = Pattern.compile("if");
+	static final Pattern ELSEIFPATTERN = Pattern.compile("elif");
 	static final Pattern ELSEPATTERN = Pattern.compile("else");
 	static final Pattern WHILEPATTERN = Pattern.compile("while");
 	static final Pattern RELOPPATTERN = Pattern.compile("lt|gt|eq");
@@ -116,7 +126,6 @@ public class Parser {
 	static final Pattern NOTPATTERN = Pattern.compile("not");
 
 	// action patterns
-	static final Pattern SEMICOLONPATTERN = Pattern.compile(";");
 	static final Pattern TURNLPATTERN = Pattern.compile("turnL");
 	static final Pattern TURNRPATTERN = Pattern.compile("turnR");
 	static final Pattern MOVEPATTERN = Pattern.compile("move");
@@ -171,6 +180,8 @@ public class Parser {
 			child = parseIf(s);
 		} else if (checkFor(WHILEPATTERN, s)) {
 			child = parseWhile(s);
+		} else if (s.hasNext(VARPATTERN)) {
+			child = parseAssign(s);
 		} else {
 			fail("Invalid Statement", s);
 		}
@@ -254,7 +265,7 @@ public class Parser {
 		require(OPENBRACE, "Missing open brace", s);
 
 		if (!s.hasNext(STMTPATTERN)) {
-			fail("Empty loop", s);
+			fail("Empty block", s);
 		}
 
 		while (s.hasNext(STMTPATTERN)) {
@@ -270,7 +281,8 @@ public class Parser {
 
 		RobotProgramNodeEvaluateBoolean child = null;
 		RobotProgramNode ifBlock = null;
-		RobotProgramNode elseIfBlock = null;
+		RobotProgramNode elseBlock = null;
+		List<IfNode> elseIfBlock = new ArrayList<>();
 
 		require(OPENPAREN, "Missing open paren", s);
 
@@ -280,14 +292,29 @@ public class Parser {
 
 		ifBlock = parseBlock(s);
 
-		if (s.hasNext(ELSEPATTERN)) {
+		while (s.hasNext(ELSEIFPATTERN)) {
 			s.next();
 
-			elseIfBlock = parseBlock(s);
+			require(OPENPAREN, "Missing open paren", s);
+
+			RobotProgramNodeEvaluateBoolean toAddCond = parseCond(s);
+
+			require(CLOSEPAREN, "Missing close peren", s);
+
+			RobotProgramNode toAddBlock = parseBlock(s);
+
+			elseIfBlock.add(new IfNode(toAddCond, toAddBlock, null, null));
 
 		}
 
-		return new IfNode(child, ifBlock, elseIfBlock);
+		if (s.hasNext(ELSEPATTERN)) {
+			s.next();
+
+			elseBlock = parseBlock(s);
+
+		}
+
+		return new IfNode(child, ifBlock, elseIfBlock, elseBlock);
 	}
 
 	static RobotProgramNode parseWhile(Scanner s) {
@@ -418,9 +445,33 @@ public class Parser {
 		} else if (checkFor(NUMBARRELSPATTERN, s)) {
 			child = new NumBarrelsNode();
 		} else if (checkFor(BARRELLRPATTERN, s)) {
-			child = new BarrelLRNode();
+
+			RobotProgramNodeEvaluateInt val = null;
+
+			if (s.hasNext(OPENPAREN)) {
+				s.next();
+
+				val = parseExpNode(s);
+
+				require(CLOSEPAREN, "Missing close peren", s);
+			}
+
+			child = new BarrelLRNode(val);
+
 		} else if (checkFor(BARRELFBPATTERN, s)) {
-			child = new BarrelFBNode();
+
+			RobotProgramNodeEvaluateInt val = null;
+
+			if (s.hasNext(OPENPAREN)) {
+				s.next();
+
+				val = parseExpNode(s);
+
+				require(CLOSEPAREN, "Missing close peren", s);
+			}
+
+			child = new BarrelFBNode(val);
+
 		} else if (checkFor(WALLDISTPATTERN, s)) {
 			child = new WallDistNode();
 		} else {
@@ -442,6 +493,20 @@ public class Parser {
 			child = parseNum(s);
 		} else if (s.hasNext(SENPATTERN)) {
 			child = parseSen(s);
+		} else if (s.hasNext(VARPATTERN)) {
+
+			String key = s.next();
+
+			// Get value from map
+			if (!variables.containsKey(key)) {
+
+				// fail("Variable not assigned", s); // Part 4 check weather variables have been
+				// assigned before use
+				child = new NumNode(0);
+			} else {
+				child = variables.get(key);
+			}
+
 		} else if (s.hasNext(OPERATIONPATTERN)) {
 
 			child = parseOp(s);
@@ -504,6 +569,32 @@ public class Parser {
 		}
 
 		return new OpNode(child);
+	}
+
+	static RobotProgramNode parseAssign(Scanner s) {
+
+		RobotProgramNodeEvaluateInt child = null;
+
+		if (s.hasNext(VARPATTERN)) {
+
+			String name = s.next();
+
+			require(DOASSIGNPATTERN, "Missing = ", s);
+
+			RobotProgramNodeEvaluateInt value = parseExpNode(s);
+
+			require(SEMICOLONPATTERN, "missing semicolcon", s);
+
+			child = new VarNode(name, value);
+
+			variables.put(name, value);
+
+		} else {
+			fail("Invalid var name", s);
+		}
+
+		return new AssignNode(child);
+
 	}
 
 	// utility methods for the parser

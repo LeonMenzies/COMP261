@@ -1,0 +1,8 @@
+$moveFor = 10; 
+move(4);
+while (gt($moveFor, 0)){
+  move(2);
+  turnL;
+  $moveFor = sub($moveFor, 1);
+}
+turnL;
