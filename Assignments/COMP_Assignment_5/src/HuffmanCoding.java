@@ -57,8 +57,6 @@ public class HuffmanCoding {
 	 */
 	public static Map<Character, String> constructTree(String text) {
 
-		text = "hello world my name is leon and this is test";
-
 		Map<Character, Integer> freq = new HashMap<>();
 		Map<Character, String> toReturn = new HashMap<>();
 		PriorityQueue<HuffmanTree> charNodes = new PriorityQueue<>();
@@ -99,13 +97,14 @@ public class HuffmanCoding {
 
 			toReturn.put(hf.value, hf.binNum);
 
-			if (hf.n1 == null) {
-				continue;
+			if (hf.left != null) {
+				rec.add(hf.left.setBin(hf.binNum + "0"));
 			}
 
-			rec.add(hf.n1.setBin(hf.binNum + "0"));
-			rec.add(hf.n2.setBin(hf.binNum + "1"));
+			if (hf.right != null) {
 
+				rec.add(hf.right.setBin(hf.binNum + "1"));
+			}
 		}
 
 		return toReturn;
@@ -117,10 +116,15 @@ public class HuffmanCoding {
 	 * containing only 1 and 0.
 	 */
 	public static String encode(String text) {
+
 		StringBuilder sb = new StringBuilder();
 
-		// TODO fill this in.
-		return "";
+		for (int i = 0; i < text.length(); i++) {
+			sb.append(tree.getBinNum(tree, text.charAt(i)));
+
+		}
+
+		return sb.toString();
 	}
 
 	/**
@@ -128,8 +132,30 @@ public class HuffmanCoding {
 	 * return the decoded text as a text string.
 	 */
 	public static String decode(String encoded) {
-		// TODO fill this in.
-		return "";
+
+		StringBuilder sb = new StringBuilder();
+
+		HuffmanTree t1 = tree;
+
+		for (char c : encoded.toCharArray()) {
+
+			// If it has no children then it is a leaf node
+			if (t1.left == null && t1.right == null) {
+				sb.append(t1.value);
+				t1 = tree;
+			}
+
+			if (c == '0') {
+				t1 = t1.left;
+			} else if (c == '1') {
+				t1 = t1.right;
+			}
+
+		}
+
+		sb.append(t1.value);
+
+		return sb.toString();
 	}
 }
 
@@ -139,8 +165,8 @@ class HuffmanTree implements Comparable<HuffmanTree> {
 	public Integer freq;
 	public String binNum = "";
 
-	public HuffmanTree n1;
-	public HuffmanTree n2;
+	public HuffmanTree left;
+	public HuffmanTree right;
 
 	public HuffmanTree(char v, int f) {
 		this.value = v;
@@ -151,8 +177,8 @@ class HuffmanTree implements Comparable<HuffmanTree> {
 		this.value = v;
 		this.freq = f;
 
-		this.n1 = n1;
-		this.n2 = n2;
+		this.left = n1;
+		this.right = n2;
 	}
 
 	public HuffmanTree setBin(String s) {
@@ -161,9 +187,60 @@ class HuffmanTree implements Comparable<HuffmanTree> {
 
 	}
 
+	public String getBinNum(HuffmanTree t, char c) {
+
+		if (t == null) {
+			return null;
+		}
+
+		if (t.value.equals(c)) {
+			return t.binNum;
+		}
+
+		String n1 = t.getBinNum(t.left, c);
+		String n2 = t.getBinNum(t.right, c);
+
+		if (n1 != null) {
+			return n1;
+		} else {
+			return n2;
+		}
+
+	}
+
 	@Override
 	public int compareTo(HuffmanTree ht) {
-		return this.freq.compareTo(ht.freq);
+
+		int v = this.freq.compareTo(ht.freq);
+
+		// If the freq is the same return in alphabetical order
+		if (v == 0) {
+
+			if (ht.value.equals(' ') && !this.value.equals(' ')) {
+				return -1;
+			} else if (this.value.equals(' ') && !ht.value.equals(' ')) {
+				return 1;
+			} else if (Character.isLowerCase(ht.value) && !Character.isLowerCase(this.value)) {
+				return -1;
+			} else if (!Character.isLowerCase(ht.value) && Character.isLowerCase(this.value)) {
+				return 1;
+			} else if (Character.isUpperCase(ht.value) && !Character.isUpperCase(this.value)) {
+				return -1;
+			} else if (!Character.isUpperCase(ht.value) && Character.isUpperCase(this.value)) {
+				return 1;
+			} else if (Character.isDigit(ht.value) && !Character.isDigit(this.value)) {
+				return -1;
+			} else if (!Character.isDigit(ht.value) && Character.isDigit(this.value)) {
+				return 1;
+			}
+
+			// System.out.println("This: " + this.value + " Other: " + ht.value + " Com: " +
+			// ht.value.compareTo(this.value));
+
+			return this.value.compareTo(ht.value);
+		}
+		return v;
+
 	}
 
 	@Override
