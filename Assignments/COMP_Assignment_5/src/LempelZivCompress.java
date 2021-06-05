@@ -58,7 +58,7 @@ public class LempelZivCompress {
 						Arrays.copyOfRange(text, cursor, cursor + length + 1),
 						Arrays.copyOfRange(text, (cursor < windowSize) ? 0 : cursor - windowSize, cursor));
 
-				if (match > prevMatch) {
+				if (match >= 0) {
 					prevMatch = match;
 					length++;
 				} else {
@@ -74,32 +74,10 @@ public class LempelZivCompress {
 
 	public static int stringMatch(char[] toMatch, char[] textWindow) {
 
-		int foundAt = 0;
+		int i = String.valueOf(textWindow).lastIndexOf(String.valueOf(toMatch));
 
-		if (toMatch.length == 0) {
-			return foundAt;
-		}
+		return i;
 
-		for (int i = 0; i < textWindow.length; i++) {
-
-			// The match char is found in the window
-			if (toMatch[0] == textWindow[i]) {
-
-				for (int j = 0; j < toMatch.length; j++) {
-
-					if (i + j > textWindow.length - 1) {
-						foundAt = i;
-					}
-
-					if (toMatch[j] != textWindow[i + j]) {
-						return 0;
-					}
-					if (j == toMatch.length - 1) {
-						foundAt = i;
-					}
-				}
-			}
-		}
-		return foundAt;
 	}
+
 }
